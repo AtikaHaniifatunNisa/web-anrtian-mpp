@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Counter;
 use App\Models\Service;
+use App\Models\Instansi;
 use Filament\Pages\Page;
 
 class QueueKiosk extends Page
@@ -15,8 +16,12 @@ class QueueKiosk extends Page
     protected static ?string $navigationIcon = 'heroicon-o-printer';
 
     public $selectedCounter = null;
+    public $selectedInstansi = null;
     public $selectedService = null;
-    public $services = [];
+
+    // Data untuk ditampilkan
+    public $instansis; // Collection of Instansi
+    public $services;  // Collection of Service
 
     // Daftar zona + deskripsi instansi
     public $counters = [
@@ -70,6 +75,12 @@ class QueueKiosk extends Page
         ],
     ];
 
+    public function mount(): void
+    {
+        $this->instansis = collect();
+        $this->services = collect();
+    }
+
     public function getCountersProperty()
     {
         return Counter::with('service')->get();
@@ -78,15 +89,36 @@ class QueueKiosk extends Page
     protected function getViewData(): array
     {
         return [
-            // Pastikan relasi 'instansi' ada di model Counter
-            'counters' => Counter::with('instansi', 'services')->get(),
+            // ambil semua counter beserta instansinya & layanan dalam instansi tsb
+            'counters' => Counter::with('instansis.services')->get(),
         ];
     }
 
 
     public function selectCounter($counterId)
     {
-        $this->selectedCounter = $counterId;
+        $this->selectedCounter = (int) $counterId;
+        $this->selectedInstansi = null;
+        $this->selectedService = null;
+
+        // Ambil instansi yang terkait dengan counter ini
+        $this->instansis = Instansi::where('counter_id', $this->selectedCounter)
+                            ->orderBy('nama_instansi')
+                            ->get();
+
+        // kosongkan services
+        $this->services = collect();
+    }
+
+    public function selectInstansi($instansiId)
+    {
+        $this->selectedInstansi = (int) $instansiId;
+        $this->selectedService = null;
+
+        // Ambil layanan yang terkait dengan instansi ini
+        $this->services = Service::where('instansi_id', $this->selectedInstansi)
+                            ->orderBy('name') // atau 'nama_service' jika berbeda
+                            ->get();
     }
 
     public function selectService($serviceId)
@@ -94,9 +126,20 @@ class QueueKiosk extends Page
         $this->selectedService = Service::find($serviceId);
     }
 
+    public function resetInstansi()
+    {
+        $this->selectedInstansi= null;
+        $this->selectedService = null;
+        $this->services = collect();
+    }
+
     public function resetSelection()
     {
         $this->selectedCounter = null;
+        $this->selectedInstansi = null;
+        $this->selectedService = null;
+        $this->instansis = collect();
+        $this->services = collect();
     }
 
     public function printStruk($serviceId)

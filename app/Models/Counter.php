@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Counter extends Model
 {
@@ -17,8 +18,8 @@ class Counter extends Model
     protected static function booted()
     {
         static::addGlobalScope('roleBasedAccess', function (Builder $builder) {
-            if (auth()->check() && auth()->user()->role === 'operator') {
-                $builder->where('id', auth()->user()->counter_id);
+            if (Auth::check() && Auth::user()->role === 'operator') {
+                $builder->where('id', Auth::user()->counter_id);
             }
         });
     }
@@ -26,8 +27,12 @@ class Counter extends Model
     // Relasi ke tabel Instansi
     public function instansi()
     {
-        return $this->belongsTo(Instansi::class, 'instansi_id');
-        return $this->hasMany(Instansi::class);
+        return $this->belongsTo(Instansi::class, 'instansi_id', 'instansi_id');
+    }
+
+    public function instansis()
+    {
+        return $this->hasMany(Instansi::class, 'counter_id');
     }
 
     // Relasi ke tabel Service
@@ -38,7 +43,7 @@ class Counter extends Model
 
     public function services()
     {
-        return $this->hasMany(Service::class);
+        return $this->hasMany(Service::class, 'service_id');
     }
 
     // Relasi ke tabel Queue

@@ -2,22 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\CounterResource\Pages;
-use App\Filament\Resources\CounterResource\RelationManagers;
 use App\Models\Counter;
-use App\Services\QueueService;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Livewire\Notifications;
-use Filament\Notifications\Notification;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Select;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use App\Filament\Resources\CounterResource\Pages;
+
 
 class CounterResource extends Resource
 {
@@ -31,42 +28,50 @@ class CounterResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()->role === 'admin';
+        return Auth::user()->role === 'admin';
     }
-
 
     public static function canCreate(): bool
     {
-        return auth()->user()->role === 'admin';
+        return Auth::user()->role === 'admin';
     }
 
     public static function canEdit(Model $record): bool
     {
-        return auth()->user()->role === 'admin';
+        return Auth::user()->role === 'admin';
     }
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->role === 'admin';
+        return Auth::user()->role === 'admin';
     }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Select::make('service_id')
-                    ->required()
-                    ->relationship('service', 'name'),
-                Forms\Components\Toggle::make('is_active')
-                    ->required(),
-                Forms\Components\Select::make('instansi_id')
-                    ->label('Instansi')
-                    ->relationship('instansi', 'nama_instansi')
+                TextInput::make('name')
+                    ->label('Nama Loket')
                     ->required(),
 
+                Toggle::make('status_aktif')
+                    ->label('Status Aktif')
+                    ->default(true),
+
+                // Hubungkan ke Instansi
+                Select::make('instansi_id')
+                    ->label('Instansi')
+                    ->relationship('instansi', 'nama_instansi') // harus sesuai relasi di model Counter
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+
+                Select::make('service_id')
+                    ->label('Layanan')
+                    ->relationship('service', 'name') // dari tabel services
+                    ->searchable()
+                    ->preload()
+                    ->required(),
             ]);
     }
 
@@ -116,5 +121,4 @@ class CounterResource extends Resource
             'index' => Pages\ManageCounters::route('/'),
         ];
     }
-
 }

@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // e.g., 'ZONA 1', 'ZONA 2'
             $table->boolean('is_active')->default(true); // Status aktif/tidak
+            $table->foreignId('instansi_id')->nullable()->constrained('instansis')->cascadeOnDelete();
             $table->timestamps();
         });
     }

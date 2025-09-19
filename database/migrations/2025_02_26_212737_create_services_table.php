@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('prefix');
             $table->integer('padding');
             $table->boolean('is_active')->default(true);
+            $table->foreignId('instansi_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         
         });

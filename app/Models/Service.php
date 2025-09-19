@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Service extends Model
 {
     protected $table = 'services';
-    protected $fillable = ['counter_id', 'name'];
+    protected $fillable = ['instansi_id', 'name'];
 
     public function counter()
     {
@@ -21,7 +21,7 @@ class Service extends Model
   
     public function instansi()
     {
-        return $this->belongsTo(\App\Models\Instansi::class, 'instansi_id', 'id');
+        return $this->belongsTo(\App\Models\Instansi::class, 'instansi_id', 'instansi_id');
     }
 
 }

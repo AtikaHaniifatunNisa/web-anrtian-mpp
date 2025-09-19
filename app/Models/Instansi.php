@@ -14,15 +14,15 @@ class Instansi extends Model
 
     protected $keyType = 'int';
     
-    protected $fillable = ['nama_instansi', 'deskripsi'];
-    
+    protected $fillable = ['nama_instansi', 'deskripsi', 'counter_id'];
+
     public function counter()
     {
-        return $this->belongsTo(Counter::class);
+        return $this->belongsTo(Counter::class, 'counter_id', 'id');
     }
 
     public function services()
     {
-        return $this->hasMany(\App\Models\Service::class, 'instansi_id', 'instansi_id');
+        return $this->hasMany(Service::class, 'instansi_id', 'instansi_id');
     }
 }

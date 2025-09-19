@@ -9,45 +9,45 @@
             <p class="text-gray-500 mt-2">Silakan pilih Zona untuk melihat layanan</p>
         </div>
 
-    {{-- Baris pertama: max 3 zona --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        @foreach(array_slice($counters, 0, 3, true) as $id => $counter)
-            <div class="bg-gradient-to-b from-pink-100 to-pink-300 p-6 rounded-xl shadow">
-                <button wire:click="selectCounter({{ $id }})"
-                    class="w-full font-bold text-lg bg-white px-4 py-2 rounded-full shadow hover:bg-pink-200 transition">
-                    {{ $counter['name'] }}
-                </button>
-                <ul class="mt-4 text-left text-sm list-disc list-inside text-gray-700">
-                    @foreach($counter['services'] as $service)
-                        <li>{{ $service }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endforeach
-    </div>
+        {{-- Baris pertama: max 3 zona --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            @foreach(array_slice($counters, 0, 3, true) as $id => $counter)
+                <div class="bg-gradient-to-b from-pink-100 to-pink-300 p-6 rounded-xl shadow">
+                    <button wire:click="selectCounter({{ $id }})"
+                        class="w-full font-bold text-lg bg-white px-4 py-2 rounded-full shadow hover:bg-pink-200 transition">
+                        {{ $counter['name'] }}
+                    </button>
+                    <ul class="mt-4 text-left text-sm list-disc list-inside text-gray-700">
+                        @foreach($counter['services'] as $service)
+                            <li>{{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endforeach
+        </div>
 
-    {{-- Baris kedua: sisa zona diratakan ke tengah --}}
-    <div class="mt-6 flex justify-center gap-6 flex-wrap">
-        @foreach(array_slice($counters, 3, null, true) as $id => $counter)
-            <div class="bg-gradient-to-b from-pink-100 to-pink-300 p-6 rounded-xl shadow w-80">
-                <button wire:click="selectCounter({{ $id }})"
-                    class="w-full font-bold text-lg bg-white px-4 py-2 rounded-full shadow hover:bg-pink-200 transition">
-                    {{ $counter['name'] }}
-                </button>
-                <ul class="mt-4 text-left text-sm list-disc list-inside text-gray-700">
-                    @foreach($counter['services'] as $service)
-                        <li>{{ $service }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endforeach
-    </div>
+        {{-- Baris kedua: sisa zona diratakan ke tengah --}}
+        <div class="mt-6 flex justify-center gap-6 flex-wrap">
+            @foreach(array_slice($counters, 3, null, true) as $id => $counter)
+                <div class="bg-gradient-to-b from-pink-100 to-pink-300 p-6 rounded-xl shadow w-80">
+                    <button wire:click="selectCounter({{ $id }})"
+                        class="w-full font-bold text-lg bg-white px-4 py-2 rounded-full shadow hover:bg-pink-200 transition">
+                        {{ $counter['name'] }}
+                    </button>
+                    <ul class="mt-4 text-left text-sm list-disc list-inside text-gray-700">
+                        @foreach($counter['services'] as $service)
+                            <li>{{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endforeach
+        </div>
 
     @else
         {{-- Step 2: Pilih Layanan --}}
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">{{ $counters[$selectedCounter]['name'] }}</h2>
-            <button wire:click="resetSelection" class="text-sm text-blue-600 hover:underline">
+            <button wire:click="resetSelection" class="bg-pink-400 text-white px-5 py-2 rounded-lg shadow hover:bg-pink-500 ml-4">
                 ← Kembali ke Zona
             </button>
         </div>
@@ -56,7 +56,7 @@
             @foreach($counters[$selectedCounter]['services'] as $service)
                 <button
                     class="bg-white p-4 rounded-xl shadow hover:bg-pink-100 transition">
-                    {{ $service }}
+                    {{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}
                 </button>
             @endforeach
         </div>

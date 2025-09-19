@@ -9,6 +9,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
 
 class InstansiResource extends Resource
 {
@@ -22,18 +24,18 @@ class InstansiResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('nama_instansi')
-                    ->label('Nama Instansi')
-                    ->required()
-                    ->maxLength(255),
+    return $form
+        ->schema([
+            TextInput::make('name')
+                ->label('Nama Instansi')
+                ->required(),
 
-                Forms\Components\TextInput::make('deskripsi')
-                    ->label('Alamat')
-                    ->maxLength(255),
-
-            ]);
+            Select::make('counter_id')
+                ->label('Zona / Loket')
+                ->relationship('counter', 'name') // sesuai relasi di model Instansi
+                ->searchable()
+                ->preload(),
+        ]);
     }
 
     public static function table(Table $table): Table

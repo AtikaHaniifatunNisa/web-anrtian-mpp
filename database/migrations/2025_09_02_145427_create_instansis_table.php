@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id('instansi_id');
             $table->string('nama_instansi');
             $table->text('deskripsi')->nullable();
+                        // foreign key ke counters
+            $table->foreignId('counter_id')
+                  ->constrained('counters') // pastikan pakai nama tabel counters
+                  ->cascadeOnDelete();
             $table->timestamps();
         });
     }
