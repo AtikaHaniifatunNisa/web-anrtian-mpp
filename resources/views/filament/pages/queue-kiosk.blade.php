@@ -47,7 +47,7 @@
         {{-- Step 2: Pilih Layanan --}}
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">{{ $counters[$selectedCounter]['name'] }}</h2>
-            <button wire:click="resetSelection" class="bg-pink-400 text-white px-5 py-2 rounded-lg shadow hover:bg-pink-500 ml-4">
+            <button wire:click="resetSelection" class="bg-pink-400 font-bold text-white px-5 py-2 rounded-lg shadow hover:bg-pink-500 ml-4">
                 ← Kembali ke Zona
             </button>
         </div>
@@ -63,10 +63,10 @@
 
         {{-- Step 3: Cetak Antrian --}}
         <div class="mt-6 text-center">
-            <button class="bg-green-500 text-white px-6 py-3 rounded-lg shadow hover:bg-green-600">
+            <button class="bg-green-500 font-bold text-white px-6 py-3 rounded-lg shadow hover:bg-green-600">
                 Cetak Struk
             </button>
-            <button class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-600 ml-4">
+            <button class="bg-blue-500 font-bold text-white px-6 py-3 rounded-lg shadow hover:bg-blue-600 ml-4">
                 Cetak Barcode
             </button>
         </div>

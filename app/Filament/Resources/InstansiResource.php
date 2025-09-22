@@ -26,15 +26,9 @@ class InstansiResource extends Resource
     {
     return $form
         ->schema([
-            TextInput::make('name')
+            TextInput::make('nama_instansi')
                 ->label('Nama Instansi')
                 ->required(),
-
-            Select::make('counter_id')
-                ->label('Zona / Loket')
-                ->relationship('counter', 'name') // sesuai relasi di model Instansi
-                ->searchable()
-                ->preload(),
         ]);
     }
 

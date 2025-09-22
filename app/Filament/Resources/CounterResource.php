@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use App\Filament\Resources\CounterResource\Pages;
 
-
 class CounterResource extends Resource
 {
     protected static ?string $model = Counter::class;

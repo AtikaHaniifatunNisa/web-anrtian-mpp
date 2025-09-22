@@ -19,10 +19,6 @@ class QueueKiosk extends Page
     public $selectedInstansi = null;
     public $selectedService = null;
 
-    // Data untuk ditampilkan
-    public $instansis; // Collection of Instansi
-    public $services;  // Collection of Service
-
     // Daftar zona + deskripsi instansi
     public $counters = [
         1 => [
@@ -75,6 +71,10 @@ class QueueKiosk extends Page
         ],
     ];
 
+        // Data untuk ditampilkan
+    public $instansis; // Collection of Instansi
+    public $services;  // Collection of Service
+
     public function mount(): void
     {
         $this->instansis = collect();
@@ -93,7 +93,6 @@ class QueueKiosk extends Page
             'counters' => Counter::with('instansis.services')->get(),
         ];
     }
-
 
     public function selectCounter($counterId)
     {
@@ -116,7 +115,7 @@ class QueueKiosk extends Page
         $this->selectedService = null;
 
         // Ambil layanan yang terkait dengan instansi ini
-        $this->services = Service::where('instansi_id', $this->selectedInstansi)
+        $this->services = Service::where('instansi_id', $this->$instansiId)
                             ->orderBy('name') // atau 'nama_service' jika berbeda
                             ->get();
     }

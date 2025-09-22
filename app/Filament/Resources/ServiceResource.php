@@ -37,6 +37,8 @@ class ServiceResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('prefix')
+                    ->label('Prefix')
+                    ->maxLength(10)  
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('padding')
@@ -54,7 +56,7 @@ class ServiceResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                 ->weight('bold'),
-                Tables\Columns\TextColumn::make('prefix')
+                Tables\Columns\TextColumn::make('prefix')            
                     ->alignCenter(),
                 Tables\Columns\TextColumn::make('padding')
                     ->label('Jumlah Digit Angka')

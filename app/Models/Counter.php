@@ -32,7 +32,7 @@ class Counter extends Model
 
     public function instansis()
     {
-        return $this->hasMany(Instansi::class, 'counter_id');
+        return $this->hasMany(Instansi::class, 'counter_id', 'id');
     }
 
     // Relasi ke tabel Service
