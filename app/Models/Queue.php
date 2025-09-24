@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Queue extends Model
 {
-    
     protected $fillable = [
         'counter_id',
         'service_id',
@@ -36,6 +35,4 @@ class Queue extends Model
     {
         return $this->belongsTo(\App\Models\Service::class, 'service_id', 'id');
     }
-
-
 }

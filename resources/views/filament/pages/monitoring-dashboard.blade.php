@@ -62,7 +62,6 @@
     </table>
 
 
-
     <div class="mt-4">
         <x-filament::button wire:click="exportExcel">Export Excel</x-filament::button>
     </div>
