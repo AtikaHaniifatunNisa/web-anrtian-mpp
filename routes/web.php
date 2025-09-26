@@ -26,3 +26,7 @@ Route::get('/export/rekap-jumlah-pemohon', function (\Illuminate\Http\Request $r
 Route::get('/antrian-skck-mpp', AntrianSkckPage::class);
 Route::get('/antrian-skck-mpp/terdaftar', AntrianSkckBerjalanPage::class);
 Route::get('/antrian-skck-mpp/{id}',[ ExportController::class, 'cetakSkck']);
+
+Route::get('/tampilan-tv', function () {
+    return view('tampilan_tv');
+});
