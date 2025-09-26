@@ -1,42 +1,61 @@
 <x-filament::page>
     @if (!$selectedCounter)
-        {{-- Step 1: Pilih Counter (Zona) --}}
-        <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold">MALL PELAYANAN PUBLIK</h1>
-            <p class="text-sm text-gray-600">
-                Jl. Tunjungan No.1-3, Genteng, Kec. Genteng, Surabaya, Jawa Timur 60275
-            </p>
-            <p class="text-gray-500 mt-2">Silakan pilih Zona untuk melihat layanan</p>
+        <div class="flex items-center justify-between px-6 py-4" style="background-color:#0D009A;">
+            <div class="w-24 flex justify-center">
+                <img src="{{ asset('img/logokiri.png') }}" alt="Logo Kiri" class="h-24 object-contain">
+            </div>
+            <div class="text-center flex-1 text-white">
+                <h1 class="text-3xl font-bold tracking-wide">MALL PELAYANAN PUBLIK</h1>
+                <p class="mt-2 text-base">
+                    Jl. Tunjungan No.1-3, Genteng, Kec. Genteng, Surabaya, Jawa Timur 60275
+                </p>
+            </div>
+            <div class="w-28 flex justify-center">
+                <img src="{{ asset('img/logokanan.png') }}" alt="Logo DPMPTSP" class="h-24 object-contain">
+            </div>
         </div>
 
-        {{-- Baris pertama: max 3 zona --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <p class="text-center text-gray-600 mt-6">Silakan pilih Zona untuk melihat layanan</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             @foreach(array_slice($counters, 0, 3, true) as $id => $counter)
-                <div class="bg-gradient-to-b from-pink-100 to-pink-300 p-6 rounded-xl shadow">
-                    <button wire:click="selectCounter({{ $id }})"
-                        class="w-full font-bold text-lg bg-white px-4 py-2 rounded-full shadow hover:bg-pink-200 transition">
-                        {{ $counter['name'] }}
-                    </button>
-                    <ul class="mt-4 text-left text-sm list-disc list-inside text-gray-700">
+                <div class="relative rounded-3xl shadow-lg p-6 text-black" style="background-color:#8A8CFF;">
+                    
+                    <div class="absolute -top-6 left-1/2 -translate-x-1/2">
+                        <button
+                            wire:click="selectCounter({{ $id }})"
+                            class="px-8 py-3 bg-white rounded-[2rem] border border-black shadow-md font-bold text-lg uppercase">
+                            {{ $counter['name'] }}
+                        </button>
+                    </div>
+
+                    <ul class="mt-10 list-disc list-inside space-y-2 text-base font-medium">
                         @foreach($counter['services'] as $service)
-                            <li>{{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}</li>
+                            <li class="underline underline-offset-2">
+                                {{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}
+                            </li>
                         @endforeach
                     </ul>
                 </div>
             @endforeach
         </div>
-
-        {{-- Baris kedua: sisa zona diratakan ke tengah --}}
         <div class="mt-6 flex justify-center gap-6 flex-wrap">
             @foreach(array_slice($counters, 3, null, true) as $id => $counter)
-                <div class="bg-gradient-to-b from-pink-100 to-pink-300 p-6 rounded-xl shadow w-80">
-                    <button wire:click="selectCounter({{ $id }})"
-                        class="w-full font-bold text-lg bg-white px-4 py-2 rounded-full shadow hover:bg-pink-200 transition">
-                        {{ $counter['name'] }}
-                    </button>
-                    <ul class="mt-4 text-left text-sm list-disc list-inside text-gray-700">
+                <div class="relative w-80 rounded-3xl shadow-lg p-6 text-black" style="background-color:#8A8CFF;">
+                    
+                    <div class="absolute -top-6 left-1/2 -translate-x-1/2">
+                        <button
+                            wire:click="selectCounter({{ $id }})"
+                            class="px-8 py-3 bg-white rounded-[2rem] border border-black shadow-md font-bold text-lg uppercase">
+                            {{ $counter['name'] }}
+                        </button>
+                    </div>
+            
+                    <ul class="mt-10 list-disc list-inside space-y-2 text-base font-medium">
                         @foreach($counter['services'] as $service)
-                            <li>{{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}</li>
+                            <li class="underline underline-offset-2">
+                                {{ is_array($service) ? ($service['nama_service'] ?? $service['name'] ?? '-') : $service }}
+                            </li>
                         @endforeach
                     </ul>
                 </div>
@@ -44,7 +63,6 @@
         </div>
 
     @else
-        {{-- Step 2: Pilih Layanan --}}
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">{{ $counters[$selectedCounter]['name'] }}</h2>
             <button wire:click="resetSelection" class="bg-pink-400 font-bold text-white px-5 py-2 rounded-lg shadow hover:bg-pink-500 ml-4">
@@ -61,7 +79,6 @@
             @endforeach
         </div>
 
-        {{-- Step 3: Cetak Antrian --}}
         <div class="mt-6 text-center">
             <button class="bg-green-500 font-bold text-white px-6 py-3 rounded-lg shadow hover:bg-green-600">
                 Cetak Struk
@@ -76,6 +93,11 @@
 
 @push('styles')
 <style>
+    html, body {
+        height: 100%;
+        overflow-y: auto !important;
+    }
+
     .service-card {
         background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -119,12 +141,10 @@
             transform: scale(0.95);
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
         }
-
         70% {
             transform: scale(1);
             box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
         }
-
         100% {
             transform: scale(0.95);
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
@@ -157,16 +177,6 @@
         animation: ripple 0.6s linear;
     }
 
-    /* Kiosk Mode Styles */
-    body {
-        overflow: hidden;
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-    }
-
-    /* Floating Animation */
     .floating-shape {
         position: absolute;
         border-radius: 50%;
@@ -175,34 +185,15 @@
     }
 
     @keyframes float {
-
-        0%,
-        100% {
-            transform: translateY(0px);
-        }
-
-        50% {
-            transform: translateY(-20px);
-        }
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
     }
 
-    /* Responsive Design for Kiosk */
     @media (max-height: 768px) {
-        .text-6xl {
-            font-size: 3rem;
-        }
-
-        .text-7xl {
-            font-size: 4rem;
-        }
-
-        .p-12 {
-            padding: 2rem;
-        }
-
-        .mb-16 {
-            margin-bottom: 2rem;
-        }
+        .text-6xl { font-size: 3rem; }
+        .text-7xl { font-size: 4rem; }
+        .p-12 { padding: 2rem; }
+        .mb-16 { margin-bottom: 2rem; }
     }
 </style>
 @endpush

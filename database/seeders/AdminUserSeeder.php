@@ -13,7 +13,7 @@ class AdminUserSeeder extends Seeder
         User::create([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
-            'password' => Hash::make('admin123'), // password di-hash
+            'password' => Hash::make('admin123'), 
         ]);
     }
 }
