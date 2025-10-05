@@ -40,7 +40,7 @@ class QueueKiosk extends Page
     protected function getViewData(): array
     {
         return [
-            'countersDb' => Counter::with('instansis.services')->get(),
+            'countersDb' => Counter::with(['instansi', 'service'])->get(),
         ];
     }
 
@@ -54,7 +54,7 @@ class QueueKiosk extends Page
         $counterName = $this->counters[$this->selectedCounter]['name'] ?? null;
     
         // Ambil MIN(id) untuk nama zona tsb (ZONA 1/2/3/4/5) - case-insensitive
-        $this->selectedCounterDbId = \App\Models\Counter::whereRaw('UPPER(name) = UPPER(?)', [$counterName])
+        $this->selectedCounterDbId = Counter::whereRaw('UPPER(name) = UPPER(?)', [$counterName])
             ->min('id');
     
         if (!$this->selectedCounterDbId) {
@@ -63,7 +63,7 @@ class QueueKiosk extends Page
             return;
         }
     
-        $this->instansis = \App\Models\Instansi::where('counter_id', $this->selectedCounterDbId)
+        $this->instansis = Instansi::where('counter_id', $this->selectedCounterDbId)
             ->orderBy('nama_instansi')
             ->get();
     }

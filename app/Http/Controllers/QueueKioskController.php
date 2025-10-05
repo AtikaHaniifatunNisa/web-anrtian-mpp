@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Counter;
 use App\Models\Instansi;
+use App\Models\Service;
 use Illuminate\Http\Request;
 
 class QueueKioskController extends Controller
@@ -27,7 +28,7 @@ class QueueKioskController extends Controller
     public function showServices(Instansi $instansi)
     {
         // Ambil semua layanan dalam instansi
-        $services = $instansi->services;
+        $services = Service::where('instansi_id', $instansi->instansi_id)->get();
 
         return view('queue-kiosk.services', compact('instansi', 'services'));
     }

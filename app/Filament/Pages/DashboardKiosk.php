@@ -21,7 +21,8 @@ class DashboardKiosk extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->role === 'admin';
+        $user = auth()->user();
+        return $user && $user->role === 'admin';
     }
 
     public function getViewData(): array

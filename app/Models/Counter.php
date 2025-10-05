@@ -10,8 +10,8 @@ class Counter extends Model
 {
     protected $fillable = [
         'name',
-        'service_id',
         'instansi_id',
+        'service_id',
         'is_active',
     ];
 
@@ -30,21 +30,30 @@ class Counter extends Model
         return $this->belongsTo(Instansi::class, 'instansi_id', 'instansi_id');
     }
 
+    // Relasi 1:1 dengan Service (satu counter = satu service)
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'service_id');
+    }
+
+    // Relasi many-to-many dengan Service (untuk compatibility)
+    public function assignedServices()
+    {
+        return $this->belongsToMany(Service::class, 'counter_service', 'counter_id', 'service_id')
+            ->select('services.*');
+    }
+
     public function instansis()
     {
         return $this->hasMany(Instansi::class, 'counter_id', 'id');
     }
 
-    // Relasi ke tabel Service
-    public function service()
+    // Relasi ke User (1:1)
+    public function user()
     {
-        return $this->belongsTo(Service::class);
+        return $this->hasOne(User::class, 'counter_id');
     }
 
-    public function services()
-    {
-        return $this->hasMany(Service::class, 'service_id');
-    }
 
     // Relasi ke tabel Queue
     public function queues()

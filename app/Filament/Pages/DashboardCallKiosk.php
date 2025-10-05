@@ -124,14 +124,17 @@ class DashboardCallKiosk extends Page
                 ->whereDate('created_at', now()->format('Y-m-d'))
                 ->first();
 
-            $waitingQueues = Queue::where('service_id', $counter->service_id)
+            // Ambil service ID yang terkait dengan counter ini (1:1 relationship)
+            $serviceIds = $counter->service ? [$counter->service->id] : [];
+            
+            $waitingQueues = Queue::whereIn('service_id', $serviceIds)
                 ->whereIn('status', ['waiting'])
                 ->where('called_at', null)
                 ->whereDate('created_at', now()->format('Y-m-d'))
                 ->get();
 
             // Kalkulasi statistik
-            $baseQuery = Queue::where('service_id', $counter->service_id)->whereDate('created_at', now()->format('Y-m-d'));
+            $baseQuery = Queue::whereIn('service_id', $serviceIds)->whereDate('created_at', now()->format('Y-m-d'));
             $stats['total'] = (clone $baseQuery)->count();
             $stats['finished'] = (clone $baseQuery)->where('status', 'finished')->count();
             $stats['waiting'] = $waitingQueues->count();

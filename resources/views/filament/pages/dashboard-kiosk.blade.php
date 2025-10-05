@@ -271,7 +271,13 @@
                                         </path>
                                     </svg>
                                 </div>
-                                <p class="text-lg font-semibold text-gray-700">{{ $counter->service->name }}</p>
+                                <p class="text-lg font-semibold text-gray-700">
+                                    @if($counter->service)
+                                        {{ $counter->service->name }}
+                                    @else
+                                        Tidak ada layanan
+                                    @endif
+                                </p>
                             </div>
                         </div>
                     </div>

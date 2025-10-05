@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Models\Counter;
+use App\Models\Service;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\TextInput;
@@ -53,7 +54,7 @@ class CounterResource extends Resource
                     ->label('Nama Loket')
                     ->required(),
 
-                Toggle::make('status_aktif')
+                Toggle::make('is_active')
                     ->label('Status Aktif')
                     ->default(true),
 
@@ -63,14 +64,33 @@ class CounterResource extends Resource
                     ->relationship('instansi', 'nama_instansi') // harus sesuai relasi di model Counter
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        // Reset service when instansi changes
+                        $set('service_id', null);
+                    }),
 
+                // Pilih layanan yang akan ditangani oleh counter ini (1:1 relationship)
                 Select::make('service_id')
                     ->label('Layanan')
-                    ->relationship('service', 'name') // dari tabel services
+                    ->options(function ($get) {
+                        $instansiId = $get('instansi_id');
+                        if (!$instansiId) {
+                            return [];
+                        }
+                        
+                        return Service::where('instansi_id', $instansiId)
+                            ->where(function($query) use ($get) {
+                                $query->whereNull('counter_id')
+                                      ->orWhere('id', $get('service_id'));
+                            })
+                            ->pluck('name', 'id');
+                    })
                     ->searchable()
-                    ->preload()
+                    ->reactive()
                     ->required(),
+
             ]);
     }
 
@@ -82,14 +102,15 @@ class CounterResource extends Resource
                     ->label('Nama Loket')
                     ->weight('bold')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('service.name')
-                    ->label('Layanan')
-                    ->sortable(),
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Status Aktif'),
                 Tables\Columns\TextColumn::make('instansi.nama_instansi')
                     ->label('Instansi')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('service.name')
+                    ->label('Layanan')
+                    ->badge()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

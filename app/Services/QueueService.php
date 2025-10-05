@@ -54,9 +54,12 @@ class QueueService
     public function getNextQueue($counterId)
     {
         $counter = Counter::findOrFail($counterId);
+        
+        // Ambil service IDs yang terkait dengan counter ini
+        $serviceIds = $counter->service ? [$counter->service->id] : [];
 
         return Queue::where('status', 'waiting')
-            ->where('service_id', $counter->service_id)
+            ->whereIn('service_id', $serviceIds)
             ->where(function($query) use ($counterId) {
                 $query->whereNull('counter_id')->orWhere('counter_id', $counterId);
             })

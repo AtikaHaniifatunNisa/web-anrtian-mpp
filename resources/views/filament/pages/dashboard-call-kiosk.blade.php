@@ -91,7 +91,15 @@
                             : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500' }}">
                         <div class="text-center">
                             <div class="text-lg font-bold">{{ $counter->name }}</div>
-                            <div class="text-sm opacity-90">{{ $counter->service->name }}</div>
+                            <div class="text-sm opacity-90 mt-2">
+                                @if($counter->service)
+                                    <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded-full">
+                                        {{ $counter->service->name }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-500">Tidak ada layanan</span>
+                                @endif
+                            </div>
                             <div class="flex items-center justify-center mt-2">
                                 <div class="w-2 h-2 {{ $counter->is_active ? 'bg-green-400' : 'bg-gray-400' }} rounded-full mr-2"></div>
                                 <span class="text-xs">{{ $counter->is_active ? 'Aktif' : 'Nonaktif' }}</span>
@@ -279,27 +287,44 @@
                     <!-- Counter Status -->
                     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 card-hover">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Status Loket</h3>
-                        <div class="text-center">
-                            <div class="w-20 h-20 bg-gradient-to-br from-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-500 to-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                @if($this->selectedCounter->is_active)
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                @else
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                @endif
+                        @if($this->selectedCounter)
+                            <div class="text-center">
+                                <div class="w-20 h-20 bg-gradient-to-br from-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-500 to-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                    @if($this->selectedCounter->is_active)
+                                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    @else
+                                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    @endif
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                    {{ $this->selectedCounter->name }}
+                                </p>
+                                <div class="mb-4">
+                                    @if($this->selectedCounter->service)
+                                        <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded-full">
+                                            {{ $this->selectedCounter->service->name }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-500 text-sm">Tidak ada layanan</span>
+                                    @endif
+                                </div>
+                                <p class="text-xl font-bold text-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-600 mb-6">
+                                    {{ $this->selectedCounter->is_active ? 'SEDANG BUKA' : 'SEDANG TUTUP' }}
+                                </p>
+                                <button wire:click="toggleCounterStatus"
+                                    class="w-full bg-{{ $this->selectedCounter->is_active ? 'red' : 'green' }}-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-{{ $this->selectedCounter->is_active ? 'red' : 'green' }}-600 transition-colors duration-200 shadow-lg hover:shadow-xl">
+                                    {{ $this->selectedCounter->is_active ? 'Tutup Loket' : 'Buka Loket' }}
+                                </button>
                             </div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">{{ $this->selectedCounter->name }} - {{ $this->selectedCounter->service->name }}</p>
-                            <p class="text-xl font-bold text-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-600 mb-6">
-                                {{ $this->selectedCounter->is_active ? 'SEDANG BUKA' : 'SEDANG TUTUP' }}
-                            </p>
-                            <button wire:click="toggleCounterStatus"
-                                class="w-full bg-{{ $this->selectedCounter->is_active ? 'red' : 'green' }}-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-{{ $this->selectedCounter->is_active ? 'red' : 'green' }}-600 transition-colors duration-200 shadow-lg hover:shadow-xl">
-                                {{ $this->selectedCounter->is_active ? 'Tutup Loket' : 'Buka Loket' }}
-                            </button>
-                        </div>
+                        @else
+                            <div class="text-center text-gray-500 dark:text-gray-400">
+                                <p>Pilih loket untuk melihat status</p>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Statistics -->
