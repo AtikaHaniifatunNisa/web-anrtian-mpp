@@ -3,14 +3,14 @@
         {{-- ===== Gambar 1: PILIH ZONA ===== --}}
         <div class="flex items-center justify-between px-6 py-4" style="background-color:#0D009A;">
             <div class="w-24 flex justify-center">
-                <img src="{{ asset('img/logokiri.png') }}" alt="Logo Kiri" class="h-24 object-contain">
+                <img src="{{ asset('img/logopemkot_white.png') }}" alt="Logo Kiri" class="h-24 object-contain">
             </div>
             <div class="text-center flex-1 text-white">
                 <h1 class="text-3xl font-bold tracking-wide">MALL PELAYANAN PUBLIK</h1>
                 <p class="mt-2 text-base">Jl. Tunjungan No.1-3, Genteng, Kec. Genteng, Surabaya, Jawa Timur 60275</p>
             </div>
             <div class="w-28 flex justify-center">
-                <img src="{{ asset('img/logokanan.png') }}" alt="Logo DPMPTSP" class="h-24 object-contain">
+                <img src="{{ asset('img/dpmptsp.png') }}" alt="Logo DPMPTSP" class="h-24 object-contain">
             </div>
         </div>
 
@@ -18,13 +18,14 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             @foreach(array_slice($counters, 0, 3, true) as $id => $counter)
-                <div class="relative rounded-3xl shadow-lg p-6 text-black" style="background-color:#8A8CFF;">
+                <div 
+                    wire:click="selectCounter({{ $id }})"
+                    class="relative rounded-3xl shadow-lg p-6 text-black cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105" 
+                    style="background-color:#8A8CFF;">
                     <div class="absolute -top-6 left-1/2 -translate-x-1/2">
-                        <button
-                            wire:click="selectCounter({{ $id }})"
-                            class="px-8 py-3 bg-white rounded-[2rem] border border-black shadow-md font-bold text-lg uppercase">
+                        <div class="px-8 py-3 bg-white rounded-[2rem] border border-black shadow-md font-bold text-lg uppercase">
                             {{ $counter['name'] }}
-                        </button>
+                        </div>
                     </div>
                     <ul class="mt-10 list-disc list-inside space-y-2 text-base font-medium">
                         @foreach($counter['services'] as $service)
@@ -39,13 +40,14 @@
 
         <div class="mt-6 flex justify-center gap-6 flex-wrap">
             @foreach(array_slice($counters, 3, null, true) as $id => $counter)
-                <div class="relative w-80 rounded-3xl shadow-lg p-6 text-black" style="background-color:#8A8CFF;">
+                <div 
+                    wire:click="selectCounter({{ $id }})"
+                    class="relative w-80 rounded-3xl shadow-lg p-6 text-black cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105" 
+                    style="background-color:#8A8CFF;">
                     <div class="absolute -top-6 left-1/2 -translate-x-1/2">
-                        <button
-                            wire:click="selectCounter({{ $id }})"
-                            class="px-8 py-3 bg-white rounded-[2rem] border border-black shadow-md font-bold text-lg uppercase">
+                        <div class="px-8 py-3 bg-white rounded-[2rem] border border-black shadow-md font-bold text-lg uppercase">
                             {{ $counter['name'] }}
-                        </button>
+                        </div>
                     </div>
                     <ul class="mt-10 list-disc list-inside space-y-2 text-base font-medium">
                         @foreach($counter['services'] as $service)
@@ -64,7 +66,7 @@
             <h2 class="text-2xl font-bold">{{ $counters[$selectedCounter]['name'] }}</h2>
 
             <div class="flex gap-3">
-                @if($selectedInstansi)
+                @if($selectedInstansi && $selectedCounter != 1)
                     <button wire:click="resetInstansi"
                         class="bg-yellow-500 font-bold text-white px-5 py-2 rounded-lg shadow hover:bg-yellow-600">
                         ← Kembali ke Instansi
@@ -77,8 +79,8 @@
             </div>
         </div>
 
-        {{-- ===== Gambar 2: daftar INSTANSI dari DB ===== --}}
-        @if(!$selectedInstansi)
+        {{-- ===== daftar INSTANSI dari DB (untuk zona dengan multiple instansi) ===== --}}
+        @if(!$selectedInstansi && $instansis->count() > 1)
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @forelse($instansis as $instansi)
                     <button
@@ -93,8 +95,8 @@
                 @endforelse
             </div>
 
-        {{-- ===== Gambar 3: daftar LAYANAN (tampilan seperti mockup) ===== --}}
-        @else
+        {{-- ===== daftar LAYANAN (tampilan seperti mockup) ===== --}}
+        @elseif($selectedInstansi)
             @php
                 $instansiNow  = $instansis->firstWhere('instansi_id', $selectedInstansi);
                 $instansiName = $instansiNow?->nama_instansi ?? 'Instansi';
@@ -106,8 +108,7 @@
 
             <div class="mpp-board relative overflow-hidden rounded-2xl">
                 {{-- background foto gedung --}}
-                <div class="absolute inset-0 bg-cover bg-center opacity-90"
-                     style="background-image:url('{{ asset('img/bg.png') }}');"></div>
+                <div class="absolute inset-0 bg-cover bg-center opacity-90 mpp-bg-image"></div>
                 <div class="absolute inset-0 bg-black/20"></div>
 
                 {{-- banner judul instansi --}}
@@ -141,10 +142,11 @@
 
             {{-- action cetak --}}
             <div class="mt-6 text-center">
+                
                 @if($selectedService)
-                    <div class="mb-3 text-sm text-gray-300">
-                        Layanan dipilih:
-                        <span class="font-semibold text-white">
+                    <div class="mb-4 text-base bg-blue-50 px-6 py-3 rounded-xl border-2 border-blue-300 shadow-lg">
+                        <span class="font-semibold text-gray-800">Layanan dipilih:</span>
+                        <span class="font-bold text-blue-900 ml-2 text-lg">
                             {{ $selectedService->name ?? $selectedService->nama_service }}
                         </span>
                     </div>
@@ -158,12 +160,25 @@
                         wire:click="printBarcode({{ $selectedService->id }})">
                         Cetak Barcode
                     </button>
+                    
                 @else
                     <div class="text-gray-500">Silakan pilih layanan terlebih dahulu</div>
+                    
+                    {{-- Test button untuk memilih layanan pertama --}}
+                    @if($services->count() > 0)
+                        <div class="mt-4">
+                            <button 
+                                wire:click="selectService({{ $services->first()->id }})"
+                                class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                                Test: Pilih {{ $services->first()->name }}
+                            </button>
+                        </div>
+                    @endif
                 @endif
             </div>
         @endif
     @endif
+
 </x-filament::page>
 
 @push('styles')
@@ -175,6 +190,9 @@
         margin-top: .5rem;
         background: linear-gradient(180deg, rgba(13,0,154,.08), rgba(13,0,154,.08));
         border: 1px solid rgba(255,255,255,.08);
+    }
+    .mpp-bg-image {
+        background-image: url('{{ asset("img/bg.png") }}');
     }
     .mpp-title{
         margin-top: 1.25rem;
@@ -246,6 +264,7 @@ document.addEventListener('livewire:initialized', () => {
         })
     }
 
+
     Livewire.on('print-start', async (payload) => {
         const text = typeof payload === 'string' ? payload : (payload?.text ?? '')
         if (text) await printThermal(text)
@@ -255,6 +274,27 @@ document.addEventListener('livewire:initialized', () => {
         const msg = typeof payload === 'string' ? payload : (payload?.message ?? '')
         if (msg) alert(msg)
     })
+
+
+    Livewire.on('open-pdf', (payload) => {
+        console.log('Opening PDF:', payload);
+        const url = payload?.url || payload;
+        if (url) {
+            window.open(url, '_blank');
+        }
+    });
+
+    Livewire.on('open-barcode', (payload) => {
+        console.log('Opening Barcode:', payload);
+        const url = payload?.url || payload;
+        if (url) {
+            window.open(url, '_blank');
+        }
+    });
+
+
+
+
 })
 </script>
 @endpush

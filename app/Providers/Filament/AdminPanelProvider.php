@@ -27,8 +27,9 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('/')
+            ->path('/admin')
             ->login()
+            ->brandName('Antrian MPP Siola')
             ->colors([
                 'primary' => Color::Blue,
             ])

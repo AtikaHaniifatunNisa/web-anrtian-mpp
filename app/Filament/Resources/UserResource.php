@@ -6,11 +6,14 @@ use Filament\Forms;
 use App\Models\User;
 use Filament\Tables;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\UserResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\UserResource\RelationManagers;
@@ -30,7 +33,30 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()->role === 'admin';
+        return Auth::check() && in_array(Auth::user()->role, ['admin', 'operator']);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        $user = Auth::user();
+        
+        // Admin bisa edit semua user
+        if ($user->role === 'admin') {
+            return true;
+        }
+        
+        // Operator hanya bisa edit profil mereka sendiri
+        if ($user->role === 'operator') {
+            return $user->id === $record->id;
+        }
+        
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        // Hanya admin yang bisa delete user
+        return Auth::user()->role === 'admin';
     }
     
     public static function form(Form $form): Form
@@ -43,24 +69,49 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->disabled(fn($record) => $record && $record instanceof User && $record->role === 'admin'),
                 Forms\Components\TextInput::make('password')
                     ->password()
+                    ->revealable()
                     ->maxLength(255)
-                    ->dehydrateStateUsing(fn($state) => Hash::make($state))
+                    ->default(fn(?User $record) => $record?->plain_password ?? '')
+                    ->dehydrateStateUsing(fn($state) => filled($state) ? Hash::make($state) : null)
                     ->dehydrated(fn($state) => filled($state))
-                    ->required(fn(string $context): bool => $context === 'create'),
-                Forms\Components\Select::make('role')
-                    ->options([
-                        'admin' => 'Admin',
-                        'operator' => 'Operator'
-                    ])
-                    ->default('admin')
+                    ->required(fn(string $context): bool => $context === 'create')
+                    ->disabled(fn($record) => $record && $record instanceof User && $record->role === 'admin')
+                    ->afterStateUpdated(function ($state, Set $set, ?User $record) {
+                        if ($record && filled($state)) {
+                            $record->update(['plain_password' => $state]);
+                        }
+                    })
                     ->live()
-                    ->required(),
-                Forms\Components\Select::make('counter_id')
-                    ->relationship('counter', 'name')
+                    ->afterStateHydrated(function (Forms\Components\TextInput $component, ?User $record) {
+                        if ($record && $record->plain_password) {
+                            $component->state($record->plain_password);
+                        }
+                    }),
+                Forms\Components\Select::make('role')
+                    ->options(function (Get $get, ?User $record) {
+                        // Pada create: hanya izinkan operator. Pada edit admin: tampilkan Admin tapi dikunci lewat disabled.
+                        return [
+                            'operator' => 'Operator',
+                            ...($record && $record->role === 'admin' ? ['admin' => 'Admin'] : []),
+                        ];
+                    })
+                    ->default('operator')
+                    ->live()
+                    ->required()
+                    ->disabled(fn($record) => 
+                        ($record && $record instanceof User && $record->role === 'admin') ||
+                        (Auth::user()->role === 'operator')
+                    ),
+                Forms\Components\Select::make('service_id')
+                    ->label('Layanan')
+                    ->options(\App\Models\Service::where('is_active', true)->pluck('name', 'id'))
                     ->visible(fn(Get $get) => $get('role') === 'operator')
+                    ->required(fn(Get $get) => $get('role') === 'operator')
+                    ->disabled(fn() => Auth::user()->role === 'operator')
             ]);
     }
 
@@ -73,8 +124,8 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email'),
                 Tables\Columns\TextColumn::make('role')
                     ->label('Peran'),
-                Tables\Columns\TextColumn::make('counter.name')
-                ->label('Tugas Loket')
+                Tables\Columns\TextColumn::make('service.name')
+                ->label('Layanan')
                 ->formatStateUsing(fn (string $state, User $record): string => $record->role === 'admin' ? 'Semua' : $state)
             ])
             ->filters([
@@ -82,7 +133,8 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn(User $record) => $record->role !== 'admin'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

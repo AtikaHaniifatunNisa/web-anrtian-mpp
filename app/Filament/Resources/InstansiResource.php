@@ -41,9 +41,6 @@ class InstansiResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('deskripsi')
-                    ->label('Deskripsi')
-                    ->searchable(),
             ])
             ->filters([
                 //

@@ -29,8 +29,10 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'plain_password',
         'role',
-        'counter_id'
+        'counter_id',
+        'service_id'
     ];
 
     /**
@@ -59,5 +61,10 @@ class User extends Authenticatable implements FilamentUser
     public function counter()
     {
         return $this->belongsTo(Counter::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
     }
 }

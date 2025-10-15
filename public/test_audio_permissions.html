@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Audio Permissions</title>
+</head>
+<body>
+    <h1>Test Audio Permissions</h1>
+    <button onclick="testAudio()">Test Audio</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testAudio() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                // Test speech synthesis
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance('Test voice');
+                    utterance.onstart = () => result.innerHTML = 'Voice started!';
+                    utterance.onend = () => result.innerHTML = 'Voice ended!';
+                    utterance.onerror = (e) => result.innerHTML = 'Voice error: ' + e.error;
+                    speechSynthesis.speak(utterance);
+                } else {
+                    result.innerHTML = 'Speech synthesis not supported';
+                }
+            } catch (e) {
+                result.innerHTML = 'Error: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

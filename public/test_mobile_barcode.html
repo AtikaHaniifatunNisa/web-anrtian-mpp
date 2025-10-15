@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mobile Barcode</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .url-display {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            width: 100%;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .qr-test {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-test img {
+            max-width: 200px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>📱 Test Mobile Barcode Scanner</h1>
+    
+    <div class="test-card">
+        <h3>🔍 Test 1: Direct PDF Access</h3>
+        <div class="url-display">http://192.168.137.1:8000/struk/generate?service_id=1&zona=Zona%201</div>
+        <button class="test-button" onclick="testDirectPDF()">Test Direct PDF</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-card">
+        <h3>📱 Test 2: Barcode Scan (Mobile Redirect)</h3>
+        <div class="url-display">http://192.168.137.1:8000/barcode/scan?service_id=1&queue_id=1&zona=Zona%201</div>
+        <button class="test-button" onclick="testBarcodeScan()">Test Barcode Scan</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-card">
+        <h3>📋 Test 3: Barcode Show (Generate QR)</h3>
+        <div class="url-display">http://192.168.137.1:8000/barcode/show?service_id=1&queue_id=1&zona=Zona%201</div>
+        <button class="test-button" onclick="testBarcodeShow()">Test Barcode Show</button>
+        <div id="result3" class="result"></div>
+    </div>
+    
+    <div class="test-card">
+        <h3>📊 Device Info</h3>
+        <div id="deviceInfo" class="result info"></div>
+    </div>
+
+    <script>
+        // Display device info
+        function displayDeviceInfo() {
+            const deviceInfo = document.getElementById('deviceInfo');
+            const info = `
+                <strong>User Agent:</strong> ${navigator.userAgent}<br>
+                <strong>Platform:</strong> ${navigator.platform}<br>
+                <strong>Screen:</strong> ${screen.width}x${screen.height}<br>
+                <strong>Viewport:</strong> ${window.innerWidth}x${window.innerHeight}<br>
+                <strong>Is Mobile:</strong> ${/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Yes' : 'No'}
+            `;
+            deviceInfo.innerHTML = info;
+        }
+
+        function showResult(elementId, message, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+
+        async function testDirectPDF() {
+            try {
+                showResult('result1', '🔄 Testing direct PDF access...', true);
+                const response = await fetch('http://192.168.137.1:8000/struk/generate?service_id=1&zona=Zona%201');
+                if (response.ok) {
+                    showResult('result1', '✅ Direct PDF access successful! Opening PDF...', true);
+                    window.open('http://192.168.137.1:8000/struk/generate?service_id=1&zona=Zona%201', '_blank');
+                } else {
+                    showResult('result1', '❌ Direct PDF access failed: ' + response.status, false);
+                }
+            } catch (error) {
+                showResult('result1', '❌ Direct PDF access error: ' + error.message, false);
+            }
+        }
+
+        async function testBarcodeScan() {
+            try {
+                showResult('result2', '🔄 Testing barcode scan URL...', true);
+                const response = await fetch('http://192.168.137.1:8000/barcode/scan?service_id=1&queue_id=1&zona=Zona%201');
+                if (response.ok) {
+                    showResult('result2', '✅ Barcode scan URL successful! Opening...', true);
+                    window.open('http://192.168.137.1:8000/barcode/scan?service_id=1&queue_id=1&zona=Zona%201', '_blank');
+                } else {
+                    showResult('result2', '❌ Barcode scan URL failed: ' + response.status, false);
+                }
+            } catch (error) {
+                showResult('result2', '❌ Barcode scan URL error: ' + error.message, false);
+            }
+        }
+
+        async function testBarcodeShow() {
+            try {
+                showResult('result3', '🔄 Testing barcode show URL...', true);
+                const response = await fetch('http://192.168.137.1:8000/barcode/show?service_id=1&queue_id=1&zona=Zona%201');
+                if (response.ok) {
+                    showResult('result3', '✅ Barcode show URL successful! Opening...', true);
+                    window.open('http://192.168.137.1:8000/barcode/show?service_id=1&queue_id=1&zona=Zona%201', '_blank');
+                } else {
+                    showResult('result3', '❌ Barcode show URL failed: ' + response.status, false);
+                }
+            } catch (error) {
+                showResult('result3', '❌ Barcode show URL error: ' + error.message, false);
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            displayDeviceInfo();
+            testDirectPDF();
+            setTimeout(() => testBarcodeScan(), 1000);
+            setTimeout(() => testBarcodeShow(), 2000);
+        };
+    </script>
+</body>
+</html>

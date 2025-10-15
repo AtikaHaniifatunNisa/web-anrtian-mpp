@@ -10,6 +10,7 @@ use App\Models\Service;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RekapLayananExport;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 
 class MonitoringDashboard extends Page implements Forms\Contracts\HasForms
 {
@@ -60,13 +61,30 @@ class MonitoringDashboard extends Page implements Forms\Contracts\HasForms
      */
     public function getViewData(): array
     {
+        $from = now()->parse($this->from)->startOfDay();
+        $to = now()->parse($this->to)->endOfDay();
+        
         $rekapan = Service::query()
-            ->withCount(['queues as queues_count' => function ($q) {
-                $q->whereBetween('created_at', [
-                    now()->parse($this->from)->startOfDay(),
-                    now()->parse($this->to)->endOfDay(),
-                ]);
-            }])
+            ->withCount([
+                'queues as queues_count' => function ($q) use ($from, $to) {
+                    $q->whereBetween('created_at', [$from, $to]);
+                },
+                'queues as menunggu_count' => function ($q) use ($from, $to) {
+                    $q->where('status', 'waiting')->whereBetween('created_at', [$from, $to]);
+                },
+                'queues as dipanggil_count' => function ($q) use ($from, $to) {
+                    $q->where('status', 'called')->whereBetween('created_at', [$from, $to]);
+                },
+                'queues as dilayani_count' => function ($q) use ($from, $to) {
+                    $q->where('status', 'serving')->whereBetween('created_at', [$from, $to]);
+                },
+                'queues as selesai_count' => function ($q) use ($from, $to) {
+                    $q->whereIn('status', ['completed', 'finished'])->whereBetween('created_at', [$from, $to]);
+                },
+                'queues as batal_count' => function ($q) use ($from, $to) {
+                    $q->where('status', 'canceled')->whereBetween('created_at', [$from, $to]);
+                },
+            ])
             ->orderBy('name')
             ->get();
 
@@ -94,24 +112,35 @@ class MonitoringDashboard extends Page implements Forms\Contracts\HasForms
     }
     public function getMonitoringRealTime()
     {
+        $today = now()->toDateString();
+        
         return Service::withCount([
             // jumlah antrian menunggu per layanan
-            'queues as menunggu_count' => function ($q) {
-                $q->where('status', 'menunggu');
+            'queues as menunggu_count' => function ($q) use ($today) {
+                $q->where('status', 'waiting')
+                  ->whereDate('created_at', $today);
             },
-            // jumlah antrian dipanggil (sekarang)
-            'queues as sekarang_count' => function ($q) {
-                $q->where('status', 'dipanggil');
+            // jumlah antrian dipanggil per layanan
+            'queues as dipanggil_count' => function ($q) use ($today) {
+                $q->where('status', 'called')
+                  ->whereDate('created_at', $today);
             },
-            // jumlah antrian selesai
-            'queues as selesai_count' => function ($q) {
-                $q->where('status', 'selesai');
+            // jumlah antrian dilayani (sekarang)
+            'queues as dilayani_count' => function ($q) use ($today) {
+                $q->where('status', 'serving')
+                  ->whereDate('created_at', $today);
             },
-            // jumlah antrian skip
-            'queues as skip_count' => function ($q) {
-                $q->where('status', 'skip');
+            // jumlah antrian selesai (completed + finished)
+            'queues as selesai_count' => function ($q) use ($today) {
+                $q->whereIn('status', ['completed', 'finished'])
+                  ->whereDate('created_at', $today);
             },
-        ])->orderBy('name')->get(['id', 'name']);
+            // jumlah antrian batal/lewat
+            'queues as batal_count' => function ($q) use ($today) {
+                $q->where('status', 'canceled')
+                  ->whereDate('created_at', $today);
+            },
+        ])->where('is_active', true)->orderBy('name')->get(['id', 'name']);
     }
 
     public function getRekapJumlahPemohon()
@@ -120,7 +149,11 @@ class MonitoringDashboard extends Page implements Forms\Contracts\HasForms
         $to   = now()->parse($this->to)->endOfDay();
 
         return DB::table('instansis as i')
-            ->select('i.instansi_id', 'i.nama_instansi as name', DB::raw('COUNT(q.id) as total_pemohon'))
+            ->select(
+                'i.instansi_id', 
+                'i.nama_instansi as name', 
+                DB::raw('COUNT(q.id) as total_pemohon')
+            )
             ->leftJoin('services as s', 's.instansi_id', '=', 'i.instansi_id')
             ->leftJoin('queues as q', function ($join) use ($from, $to) {
                 $join->on('q.service_id', '=', 's.id')
@@ -138,6 +171,13 @@ class MonitoringDashboard extends Page implements Forms\Contracts\HasForms
             new RekapLayananExport($this->from, $this->to),
             'rekap_layanan.xlsx'
         );
-    }    
+    }
+
+    #[On('refreshMonitoring')]
+    public function refreshMonitoring()
+    {
+        // Method ini akan dipanggil oleh JavaScript untuk refresh data
+        // Livewire akan otomatis refresh komponen
+    }
 
 }

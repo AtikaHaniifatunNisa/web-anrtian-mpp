@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test QR Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .qr-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        .url-display {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test QR Code Scanner</h1>
+    
+    <div class="qr-container">
+        <h3>QR Code 1: Barcode Scan URL</h3>
+        <div class="url-display">
+            http://127.0.0.1:8000/barcode/scan?service_id=1&queue_id=1&zona=Zona%201
+        </div>
+        <div id="qr1"></div>
+        <button class="test-button" onclick="testUrl1()">Test URL 1</button>
+    </div>
+    
+    <div class="qr-container">
+        <h3>QR Code 2: Simple URL</h3>
+        <div class="url-display">
+            https://google.com
+        </div>
+        <div id="qr2"></div>
+        <button class="test-button" onclick="testUrl2()">Test URL 2</button>
+    </div>
+    
+    <div class="qr-container">
+        <h3>QR Code 3: Direct PDF URL</h3>
+        <div class="url-display">
+            http://127.0.0.1:8000/struk/generate?service_id=1&zona=Zona%201
+        </div>
+        <div id="qr3"></div>
+        <button class="test-button" onclick="testUrl3()">Test URL 3</button>
+    </div>
+
+    <script>
+        // Load QR codes from files
+        fetch('test_qr_code_fixed.svg')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('qr1').innerHTML = data;
+            })
+            .catch(error => console.error('Error loading QR1:', error));
+
+        fetch('test_simple_qr.svg')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('qr2').innerHTML = data;
+            })
+            .catch(error => console.error('Error loading QR2:', error));
+
+        // Generate QR3 using a simple library or direct SVG
+        function generateSimpleQR(text) {
+            // Simple QR code representation (not real QR, just for testing)
+            return `<div style="border: 2px solid #000; width: 200px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: #fff;">
+                <div style="text-align: center; font-size: 12px; word-break: break-all; padding: 10px;">
+                    ${text}
+                </div>
+            </div>`;
+        }
+
+        document.getElementById('qr3').innerHTML = generateSimpleQR('http://127.0.0.1:8000/struk/generate?service_id=1&zona=Zona%201');
+
+        function testUrl1() {
+            window.open('http://127.0.0.1:8000/barcode/scan?service_id=1&queue_id=1&zona=Zona%201', '_blank');
+        }
+
+        function testUrl2() {
+            window.open('https://google.com', '_blank');
+        }
+
+        function testUrl3() {
+            window.open('http://127.0.0.1:8000/struk/generate?service_id=1&zona=Zona%201', '_blank');
+        }
+    </script>
+</body>
+</html>

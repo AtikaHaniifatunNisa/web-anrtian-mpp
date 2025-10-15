@@ -43,7 +43,7 @@ class Counter extends Model
 
     public function services()
     {
-        return $this->hasMany(Service::class, 'service_id');
+        return $this->hasMany(Service::class, 'counter_id');
     }
 
     // Relasi ke tabel Queue
@@ -74,10 +74,11 @@ class Counter extends Model
     // Apakah loket masih tersedia
     public function getIsAvailableAttribute()
     {
-        $hasServingQueue = $this->queues()
-            ->where('status', 'serving')
+        $hasActiveQueue = $this->queues()
+            ->whereIn('status', ['serving', 'called'])
+            ->whereDate('created_at', now()->toDateString())
             ->exists();
 
-        return !$hasServingQueue && $this->is_active;
+        return !$hasActiveQueue && $this->is_active;
     }
 }

@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Service extends Model
 {
     protected $table = 'services';
-    protected $fillable = ['instansi_id', 'name', 'prefix', 'padding'];
+    protected $fillable = ['instansi_id', 'name', 'prefix', 'padding', 'is_active', 'counter_id'];
 
     public function counter()
     {
-        return $this->belongsTo(Counter::class, 'service_id');
+        return $this->belongsTo(Counter::class, 'counter_id');
     }
         // relasi ke Queue
     public function queues()

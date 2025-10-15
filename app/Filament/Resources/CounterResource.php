@@ -53,23 +53,43 @@ class CounterResource extends Resource
                     ->label('Nama Loket')
                     ->required(),
 
-                Toggle::make('status_aktif')
+                Toggle::make('is_active')
                     ->label('Status Aktif')
                     ->default(true),
 
                 // Hubungkan ke Instansi
                 Select::make('instansi_id')
                     ->label('Instansi')
-                    ->relationship('instansi', 'nama_instansi') // harus sesuai relasi di model Counter
+                    ->relationship('instansi', 'nama_instansi')
                     ->searchable()
                     ->preload()
+                    ->createOptionForm([
+                        TextInput::make('nama_instansi')
+                            ->label('Nama Instansi')
+                            ->required(),
+                    ])
                     ->required(),
 
                 Select::make('service_id')
                     ->label('Layanan')
-                    ->relationship('service', 'name') // dari tabel services
+                    ->relationship('service', 'name')
                     ->searchable()
                     ->preload()
+                    ->createOptionForm([
+                        TextInput::make('name')
+                            ->label('Nama Layanan')
+                            ->required(),
+                        TextInput::make('prefix')
+                            ->label('Prefix')
+                            ->default('A'),
+                        TextInput::make('padding')
+                            ->label('Padding')
+                            ->numeric()
+                            ->default(3),
+                        Toggle::make('is_active')
+                            ->label('Status Aktif')
+                            ->default(true),
+                    ])
                     ->required(),
             ]);
     }

@@ -271,7 +271,7 @@
                                         </path>
                                     </svg>
                                 </div>
-                                <p class="text-lg font-semibold text-gray-700">{{ $counter->service->name }}</p>
+                                <p class="text-lg font-semibold text-gray-700">{{ $counter->service?->name ?? 'Tidak ada layanan' }}</p>
                             </div>
                         </div>
                     </div>

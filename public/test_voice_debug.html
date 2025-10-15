@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Voice Debug</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">Test Voice Debug</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold text-blue-800 mb-2">Test Speech Synthesis</h2>
+                    <button onclick="testSpeech()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Test Suara
+                    </button>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold text-green-800 mb-2">Test Livewire Event</h2>
+                    <button onclick="testLivewireEvent()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                        Test Event
+                    </button>
+                </div>
+                
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold text-purple-800 mb-2">Test Audio File</h2>
+                    <button onclick="testAudioFile()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                        Test Audio
+                    </button>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold text-orange-800 mb-2">Console Log</h2>
+                    <div id="consoleLog" class="bg-gray-900 text-green-400 p-3 rounded text-sm font-mono h-32 overflow-y-auto">
+                        Console logs will appear here...<br>
+                    </div>
+                </div>
+                
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold text-red-800 mb-2">Browser Info</h2>
+                    <div id="browserInfo" class="text-sm text-gray-600">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Instructions:</h3>
+            <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. Open Developer Tools (F12) → Console tab</li>
+                <li>2. Click "Test Suara" - should hear voice</li>
+                <li>3. Click "Test Event" - should see event in console</li>
+                <li>4. Click "Test Audio" - should play audio file</li>
+                <li>5. Check if speech synthesis is supported</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Audio element -->
+    <audio id="testAudio" preload="auto">
+        <source src="/sounds/announcement.mp3" type="audio/mpeg">
+        <source src="/sounds/announcement.wav" type="audio/wav">
+    </audio>
+
+    <script>
+        // Console logging function
+        function log(message) {
+            const consoleDiv = document.getElementById('consoleLog');
+            const time = new Date().toLocaleTimeString();
+            consoleDiv.innerHTML += `[${time}] ${message}<br>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // Test speech synthesis
+        function testSpeech() {
+            log('Testing speech synthesis...');
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance();
+                utterance.text = 'Nomor antrian A001, silakan menuju ke Loket 1';
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                // Get available voices
+                const voices = speechSynthesis.getVoices();
+                log(`Available voices: ${voices.length}`);
+                
+                // Try to find Indonesian voice
+                const indonesianVoice = voices.find(voice => 
+                    voice.lang.includes('id') || voice.lang.includes('ID')
+                );
+                
+                if (indonesianVoice) {
+                    utterance.voice = indonesianVoice;
+                    log(`Using Indonesian voice: ${indonesianVoice.name}`);
+                } else {
+                    log('No Indonesian voice found, using default');
+                }
+                
+                // Event handlers
+                utterance.onstart = () => log('Speech started');
+                utterance.onend = () => log('Speech ended');
+                utterance.onerror = (e) => log(`Speech error: ${e.error}`);
+                
+                speechSynthesis.speak(utterance);
+                log('Speech synthesis initiated');
+            } else {
+                log('Speech synthesis not supported');
+            }
+        }
+
+        // Test Livewire event
+        function testLivewireEvent() {
+            log('Testing Livewire event...');
+            
+            const eventData = {
+                queueNumber: 'A001',
+                serviceName: 'Test Service',
+                counterName: 'Test Counter',
+                zona: 'Test Zone',
+                calledAt: new Date().toLocaleTimeString('id-ID')
+            };
+            
+            // Dispatch custom event
+            const event = new CustomEvent('announce-queue', {
+                detail: eventData
+            });
+            
+            window.dispatchEvent(event);
+            log('Livewire event dispatched: ' + JSON.stringify(eventData));
+        }
+
+        // Test audio file
+        function testAudioFile() {
+            log('Testing audio file...');
+            
+            const audio = document.getElementById('testAudio');
+            
+            audio.oncanplay = () => log('Audio can play');
+            audio.onplay = () => log('Audio playing');
+            audio.onended = () => log('Audio ended');
+            audio.onerror = (e) => log(`Audio error: ${e.error}`);
+            
+            audio.play().then(() => {
+                log('Audio play started');
+            }).catch(e => {
+                log(`Audio play failed: ${e.message}`);
+            });
+        }
+
+        // Browser info
+        function updateBrowserInfo() {
+            const info = document.getElementById('browserInfo');
+            const details = [
+                `User Agent: ${navigator.userAgent}`,
+                `Speech Synthesis: ${'speechSynthesis' in window ? 'Supported' : 'Not Supported'}`,
+                `Audio Context: ${'AudioContext' in window ? 'Supported' : 'Not Supported'}`,
+                `Web Audio: ${'webkitAudioContext' in window ? 'Supported' : 'Not Supported'}`,
+                `Screen: ${screen.width}x${screen.height}`,
+                `Viewport: ${window.innerWidth}x${window.innerHeight}`
+            ];
+            
+            info.innerHTML = details.join('<br>');
+        }
+
+        // Event listener for Livewire events
+        window.addEventListener('announce-queue', function(event) {
+            log('Received announce-queue event: ' + JSON.stringify(event.detail));
+            
+            // Test speech with event data
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance();
+                utterance.text = `Nomor antrian ${event.detail.queueNumber}, silakan menuju ke ${event.detail.counterName}`;
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                speechSynthesis.speak(utterance);
+                log('Speech synthesis triggered by event');
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', function() {
+            log('Page loaded');
+            updateBrowserInfo();
+            
+            // Load voices
+            if ('speechSynthesis' in window) {
+                speechSynthesis.getVoices();
+                setTimeout(() => {
+                    const voices = speechSynthesis.getVoices();
+                    log(`Voices loaded: ${voices.length}`);
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
