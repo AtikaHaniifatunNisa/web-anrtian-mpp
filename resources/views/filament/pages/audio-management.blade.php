@@ -1,5 +1,4 @@
 <x-filament-panels::page>
-    <script src="https://cdn.tailwindcss.com"></script>
     
     <div class="space-y-6">
         <!-- Header -->
@@ -44,45 +43,57 @@
             <form wire:submit="saveAudio" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label for="audio-url-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             URL Audio Eksternal
                         </label>
                         <input type="url" 
+                            id="audio-url-input"
+                            name="audio-url-input"
                             wire:model="audioUrl"
                             placeholder="https://example.com/audio.mp3"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            aria-label="URL Audio Eksternal">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Masukkan URL audio dari link eksternal
                         </p>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label for="audio-name-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Nama Audio
                         </label>
                         <input type="text" 
+                            id="audio-name-input"
+                            name="audio-name-input"
                             wire:model="audioName"
                             placeholder="Audio Pemanggilan Antrian"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            aria-label="Nama Audio">
                     </div>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label for="audio-description-textarea" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Deskripsi
                     </label>
-                    <textarea wire:model="audioDescription"
+                    <textarea id="audio-description-textarea"
+                        name="audio-description-textarea"
+                        wire:model="audioDescription"
                         rows="3"
                         placeholder="Deskripsi audio..."
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"></textarea>
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        aria-label="Deskripsi"></textarea>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label for="audio-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Tipe Audio
                     </label>
-                    <select wire:model="audioType"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                    <select id="audio-type-select"
+                        name="audio-type-select"
+                        wire:model="audioType"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        aria-label="Tipe Audio">
                         <option value="announcement">Audio Pemanggilan</option>
                         <option value="background">Audio Background</option>
                         <option value="notification">Audio Notifikasi</option>

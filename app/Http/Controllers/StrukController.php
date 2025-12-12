@@ -97,7 +97,7 @@ class StrukController extends Controller
     {
         // Generate nomor antrian berdasarkan prefix dan padding
         $prefix = $service->prefix ?? 'A';
-        $padding = $service->padding ?? 3;
+        $padding = $service->padding ?? 0;
         
         // Cari nomor terakhir untuk layanan ini hari ini
         $lastQueue = Queue::where('service_id', $service->id)
@@ -105,8 +105,13 @@ class StrukController extends Controller
             ->orderBy('id', 'desc')
             ->first();
         
-        $nextNumber = $lastQueue ? (intval(substr($lastQueue->number, strlen($prefix))) + 1) : 1;
+        $nextNumber = $lastQueue ? (intval(substr($lastQueue->number, strlen($prefix) + 1))) + 1 : 1;
         
-        return $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+        // Jika padding = 0, tidak perlu str_pad
+        if ($padding == 0) {
+            return $prefix . '-' . $nextNumber;
+        }
+        
+        return $prefix . '-' . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
     }
 }

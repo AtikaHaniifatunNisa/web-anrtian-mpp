@@ -30,6 +30,15 @@ class QueueResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-queue-list';
 
+    public static function canAccess(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->role === 'admin';
+    }
+    
+    public static function canViewAny(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->role === 'admin';
+    }
 
     public static function canCreate(): bool
     {

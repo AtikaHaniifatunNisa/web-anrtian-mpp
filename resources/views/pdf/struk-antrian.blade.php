@@ -59,7 +59,7 @@
         }
         
         .queue-number {
-            font-size: 36px;
+            font-size: 48px;
             font-weight: bold;
             margin: 8px 0;
             letter-spacing: 1px;
@@ -71,41 +71,22 @@
         }
         
         .footer-info {
-            position: relative;
             display: flex;
-            justify-content: flex-start;
-            align-items: flex-end;
-            font-size: 6px;
+            justify-content: center;
+            align-items: center;
+            font-size: 9px;
             margin-top: 10px;
             padding: 0 3px;
             color: #666;
-            flex-direction: row;
+            flex-direction: column;
             width: 100%;
-            height: 10px;
-            box-sizing: border-box;
+            text-align: center;
+            gap: 2px;
         }
         
         .divider {
             border-top: 1px solid #ccc;
             margin: 5px 0;
-        }
-        
-        .time-info {
-            text-align: left;
-            flex: 0 0 auto;
-            line-height: 1;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .date-info {
-            position: absolute;
-            right: 3px;
-            bottom: 0;
-            text-align: right;
-            line-height: 1;
-            margin: 0;
-            padding: 0;
         }
     </style>
 </head>
@@ -133,19 +114,18 @@
             </div>
             
             <div class="mall-title">{{ $data['mall'] }}</div>
-            <div class="mall-title">{{ $data['kota'] }}</div>
+            <div class="mall-title">SIOLA {{ $data['kota'] }}</div>
             
             <div class="divider"></div>
             
-            <div class="sub-info">{{ $data['zona'] }} - {{ $data['loket'] }}</div>
-            <div class="sub-info">{{ $data['layanan'] }}</div>
+            <div class="sub-info"><strong>{{ $data['zona'] }} - {{ $data['loket'] }} - {{ $data['layanan'] }}</strong></div>
         </div>
         
         <div class="queue-number">{{ $data['nomor'] }}</div>
         
         <div class="footer-info">
-            <div class="time-info">{{ $data['waktu'] }}</div>
-            <div class="date-info">{{ $data['tanggal'] }}</div>
+            <div>{{ $data['waktu'] }}</div>
+            <div>{{ $data['tanggal'] }}</div>
         </div>
     </div>
 </body>

@@ -1,4 +1,4 @@
-<div class="flex flex-col flex-grow p-4 lg:p-8 relative overflow-hidden" wire:poll.750ms="callNextQueue">
+<div class="flex flex-col flex-grow p-4 lg:p-8 relative overflow-hidden" wire:poll.500ms="refreshData">
 <!-- Fullscreen Button -->
     <button id="fullscreen-btn" class="fixed top-6 right-6 z-50 w-14 h-14 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 flex items-center justify-center hover:bg-gradient-to-br hover:from-blue-600 hover:to-indigo-600 hover:text-white transition-all duration-300 group">
         <svg class="w-7 h-7 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,11 +30,27 @@
                 @php
                     $nextQueue = null;
                     $serviceCountersActive = $serviceCounters->where('is_active', true);
-
+                    
+                    // Cari nextQueue dari counter manapun dalam service group ini
+                    // Jika tidak ditemukan via relationship, query langsung
                     foreach ($serviceCountersActive as $counter) {
                         if ($counter->nextQueue) {
                             $nextQueue = $counter->nextQueue;
                             break;
+                        }
+                    }
+                    
+                    // Fallback: jika nextQueue tidak ditemukan via relationship, query langsung
+                    if (!$nextQueue && $serviceCountersActive->count() > 0) {
+                        $firstCounter = $serviceCountersActive->first();
+                        if ($firstCounter && $firstCounter->service_id) {
+                            $nextQueue = \App\Models\Queue::where('service_id', $firstCounter->service_id)
+                                ->where('status', 'waiting')
+                                ->whereNull('counter_id')
+                                ->whereNull('called_at')
+                                ->whereDate('created_at', now()->toDateString())
+                                ->orderBy('id', 'asc')
+                                ->first();
                         }
                     }
 
@@ -116,8 +132,8 @@
         </div>
 
         {{-- 📌 KANAN: COUNTER LISTING --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6 lg:col-span-2">
-            @foreach ($counters as $counter)
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 lg:col-span-2">
+            @forelse ($counters as $counter)
                 {{-- Menentukan warna tema berdasarkan status loket --}}
                 @php
                     $themeColors = [
@@ -160,7 +176,15 @@
 
                     $themeColor = 'gray'; // Default color for inactive
                     if ($counter->is_active && $counter->activeQueue) {
-                        $themeColor = $counter->is_available ? 'blue' : 'green';
+                        // Jika ada activeQueue, cek statusnya
+                        $activeQueueStatus = $counter->activeQueue->status;
+                        if ($activeQueueStatus === 'serving') {
+                            $themeColor = 'green'; // Sedang melayani
+                        } elseif ($activeQueueStatus === 'called') {
+                            $themeColor = 'blue'; // Baru dipanggil
+                        } else {
+                            $themeColor = $counter->is_available ? 'blue' : 'green';
+                        }
                     } else {
                         $themeColor = $counter->is_available ? 'yellow' : 'red';
                     }
@@ -169,7 +193,7 @@
                 @endphp
 
                 <div
-                    class="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 transition-all duration-500 ease-in-out transform hover:-translate-y-2 hover:shadow-2xl overflow-hidden">
+                    class="counter-card-consistent group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 transition-all duration-500 ease-in-out transform hover:-translate-y-2 hover:shadow-2xl overflow-hidden">
 
                     <!-- Gradient Border Effect -->
                     <div
@@ -213,7 +237,23 @@
                         <!-- Main Content -->
                         <div class="flex-grow flex flex-col items-center justify-center p-8 text-center">
                             @if ($counter->is_active)
-                                @if ($counter->activeQueue)
+                                @php
+                                    // Prioritaskan activeQueue (yang sedang dipanggil/dilayani)
+                                    // Jika tidak ada, tampilkan nextQueue (antrian waiting berikutnya)
+                                    $displayQueue = $counter->activeQueue ?? $counter->nextQueue;
+                                    
+                                    // Fallback: jika nextQueue tidak ter-load via relationship, query langsung
+                                    if (!$displayQueue && $counter->service_id) {
+                                        $displayQueue = \App\Models\Queue::where('service_id', $counter->service_id)
+                                            ->where('status', 'waiting')
+                                            ->whereNull('counter_id')
+                                            ->whereNull('called_at')
+                                            ->whereDate('created_at', now()->toDateString())
+                                            ->orderBy('id', 'asc')
+                                            ->first();
+                                    }
+                                @endphp
+                                @if ($displayQueue)
                                     <div class="mb-4">
                                         <p class="text-sm text-gray-500 mb-2 font-medium">Nomor Antrian</p>
                                         <div class="relative">
@@ -222,13 +262,21 @@
                                             </div>
                                             <div
                                                 class="relative text-8xl font-black {{ $colors['text'] }} tracking-wider drop-shadow-lg">
-                                                {{ $counter->activeQueue->number }}
+                                                {{ $displayQueue->number }}
                                             </div>
                                         </div>
                                     </div>
+                                    @php
+                                        // Tentukan status berdasarkan queue yang ditampilkan
+                                        if ($counter->activeQueue) {
+                                            $queueStatus = $counter->activeQueue->status === 'serving' ? 'Dilayani' : 'Dipanggil';
+                                        } else {
+                                            $queueStatus = 'Menunggu';
+                                        }
+                                    @endphp
                                     <div
                                         class="px-4 py-2 bg-gradient-to-r {{ $colors['gradient'] }} text-white rounded-full shadow-lg">
-                                        <p class="text-lg font-semibold">{{ $counter->activeQueue->kiosk_label }}</p>
+                                        <p class="text-lg font-semibold">{{ $queueStatus }}</p>
                                     </div>
                                 @else
                                     <div class="flex flex-col items-center justify-center text-gray-500">
@@ -276,7 +324,14 @@
                         </div>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <div class="col-span-full text-center py-12">
+                    <div class="bg-gray-100 rounded-2xl p-8">
+                        <p class="text-xl font-semibold text-gray-600 mb-2">Tidak ada counter</p>
+                        <p class="text-gray-400">Belum ada counter yang terdaftar.</p>
+                    </div>
+                </div>
+            @endforelse
         </div>
 
     </div>
@@ -285,6 +340,110 @@
 
 @push('styles')
     <style>
+        /* Counter Card Consistent Styling untuk Semua Zona */
+        .counter-card-consistent {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 1rem; /* rounded-2xl = 1rem */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            border-width: 1px;
+            border-color: rgba(229, 231, 235, 0.5); /* border-gray-200/50 */
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .counter-card-consistent:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+        }
+
+        /* Pastikan semua card memiliki tinggi yang sama */
+        .counter-card-consistent .relative.flex.flex-col.h-full {
+            min-height: 400px;
+        }
+
+        /* Header konsisten untuk semua card */
+        .counter-card-consistent .flex.justify-between.items-center {
+            min-height: 80px;
+        }
+
+        /* Content area konsisten */
+        .counter-card-consistent .flex-grow {
+            min-height: 200px;
+        }
+
+        /* Footer konsisten */
+        .counter-card-consistent .bg-gradient-to-r.from-gray-50 {
+            min-height: 70px;
+        }
+
+        /* Padding dan spacing konsisten untuk semua card */
+        .counter-card-consistent .flex.justify-between.items-center {
+            padding: 1.5rem !important;
+            min-height: 80px;
+        }
+
+        .counter-card-consistent .flex-grow.flex.flex-col.items-center.justify-center {
+            padding: 2rem !important;
+            min-height: 200px;
+        }
+
+        .counter-card-consistent .bg-gradient-to-r.from-gray-50 {
+            padding: 1rem !important;
+            min-height: 70px;
+        }
+
+        /* Memastikan semua text memiliki font size yang konsisten */
+        .counter-card-consistent h2 {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        /* Memastikan semua badge memiliki styling yang sama */
+        .counter-card-consistent .px-3.py-1 {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* rounded-full */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600;
+        }
+
+        /* Memastikan semua card memiliki lebar yang sama di grid */
+        .counter-card-consistent {
+            width: 100%;
+        }
+
+        /* Responsive Design Konsisten untuk Semua Card */
+        @media (max-width: 1536px) {
+            .counter-card-consistent {
+                min-height: 380px;
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .counter-card-consistent {
+                min-height: 360px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .counter-card-consistent {
+                min-height: 340px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .counter-card-consistent {
+                min-height: 320px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .counter-card-consistent {
+                min-height: 300px;
+            }
+        }
+
         .counter-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }

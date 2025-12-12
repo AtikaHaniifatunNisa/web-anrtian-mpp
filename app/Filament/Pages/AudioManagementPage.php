@@ -26,6 +26,16 @@ class AudioManagementPage extends Page implements HasForms, HasActions
     protected static ?string $title = 'Manajemen Audio';
     protected static ?string $navigationLabel = 'Manajemen Audio';
     protected static ?int $navigationSort = 10;
+    
+    public static function canAccess(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->role === 'admin';
+    }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->role === 'admin';
+    }
 
     public $audioUrl = '';
     public $audioName = '';

@@ -49,38 +49,81 @@ class RekapLayananExport implements FromCollection, ShouldAutoSize, WithTitle, W
         $no = 1;
 
         foreach ($instansis as $instansi) {
-            $row = [
-                'No' => $no,
-                'Jenis_Instansi' => $instansi->nama_instansi
-            ];
+            // Khusus untuk Kepolisian Resor Kota Besar, pisahkan menjadi 3 layanan
+            if ($instansi->nama_instansi === 'Kepolisian Resor Kota Besar') {
+                // Ambil layanan Kepolisian
+                $kepolisianServices = DB::table('services')
+                    ->where('instansi_id', $instansi->instansi_id)
+                    ->whereIn('name', ['Layanan SIM', 'Layanan SKCK', 'Layanan ETLE'])
+                    ->get();
 
-            // Hitung jumlah pemohon per tanggal (1-31)
-            foreach ($dates as $day) {
-                // Buat tanggal berdasarkan bulan dan tahun dari range yang dipilih
-                $year = $from->year;
-                $month = $from->month;
-                $checkDate = Carbon::create($year, $month, $day);
-                
-                // Cek apakah tanggal tersebut ada dalam range yang dipilih
-                if ($checkDate->gte($from) && $checkDate->lte($to)) {
-                    $dateStart = $checkDate->copy()->startOfDay();
-                    $dateEnd = $checkDate->copy()->endOfDay();
+                foreach ($kepolisianServices as $service) {
+                    $row = [
+                        'No' => $no,
+                        'Jenis_Instansi' => $service->name
+                    ];
+
+                    // Hitung jumlah pemohon per tanggal (1-31) untuk layanan spesifik
+                    foreach ($dates as $day) {
+                        $year = $from->year;
+                        $month = $from->month;
+                        $checkDate = Carbon::create($year, $month, $day);
+                        
+                        // Cek apakah tanggal tersebut ada dalam range yang dipilih
+                        if ($checkDate->gte($from) && $checkDate->lte($to)) {
+                            $dateStart = $checkDate->copy()->startOfDay();
+                            $dateEnd = $checkDate->copy()->endOfDay();
+                            
+                            // Hitung antrian untuk layanan spesifik
+                            $jumlahPemohon = DB::table('queues as q')
+                                ->where('q.service_id', $service->id)
+                                ->whereBetween('q.created_at', [$dateStart, $dateEnd])
+                                ->count();
+                        } else {
+                            $jumlahPemohon = 0;
+                        }
+
+                        $row['Tanggal_' . $day] = $jumlahPemohon;
+                    }
+
+                    $data->push($row);
+                    $no++;
+                }
+            } else {
+                // Untuk instansi lain, tetap seperti biasa
+                $row = [
+                    'No' => $no,
+                    'Jenis_Instansi' => $instansi->nama_instansi
+                ];
+
+                // Hitung jumlah pemohon per tanggal (1-31)
+                foreach ($dates as $day) {
+                    // Buat tanggal berdasarkan bulan dan tahun dari range yang dipilih
+                    $year = $from->year;
+                    $month = $from->month;
+                    $checkDate = Carbon::create($year, $month, $day);
                     
-                    // Query yang diperbaiki untuk menghitung jumlah antrian per instansi per tanggal
-                    $jumlahPemohon = DB::table('queues as q')
-                        ->join('services as s', 'q.service_id', '=', 's.id')
-                        ->where('s.instansi_id', $instansi->instansi_id)
-                        ->whereBetween('q.created_at', [$dateStart, $dateEnd])
-                        ->count();
-                } else {
-                    $jumlahPemohon = 0; // Jika tanggal di luar range, set 0
+                    // Cek apakah tanggal tersebut ada dalam range yang dipilih
+                    if ($checkDate->gte($from) && $checkDate->lte($to)) {
+                        $dateStart = $checkDate->copy()->startOfDay();
+                        $dateEnd = $checkDate->copy()->endOfDay();
+                        
+                        // Query yang diperbaiki untuk menghitung jumlah antrian per instansi per tanggal
+                        $jumlahPemohon = DB::table('queues as q')
+                            ->join('services as s', 'q.service_id', '=', 's.id')
+                            ->where('s.instansi_id', $instansi->instansi_id)
+                            ->whereBetween('q.created_at', [$dateStart, $dateEnd])
+                            ->count();
+                    } else {
+                        $jumlahPemohon = 0; // Jika tanggal di luar range, set 0
+                    }
+
+                    $row['Tanggal_' . $day] = $jumlahPemohon;
                 }
 
-                $row['Tanggal_' . $day] = $jumlahPemohon;
+                $data->push($row);
+                $no++;
             }
-
-            $data->push($row);
-            $no++;
         }
 
         return $data;
@@ -118,7 +161,7 @@ class RekapLayananExport implements FromCollection, ShouldAutoSize, WithTitle, W
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
                 
                 // 3. Tambahkan subtitle di baris 2
-                $sheet->setCellValue('A2', 'Bulan ' . now()->parse($this->from)->format('F Y'));
+                $sheet->setCellValue('A2', 'Bulan ' . $from->format('F Y'));
                 $sheet->mergeCells('A2:' . $lastColumnLetter . '2');
                 $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal('center');
@@ -153,6 +196,10 @@ class RekapLayananExport implements FromCollection, ShouldAutoSize, WithTitle, W
                 // Alignment khusus untuk kolom No. dan Jenis Instansi (merged cells)
                 $sheet->getStyle('A3')->getAlignment()->setHorizontal('center'); // No. center aligned
                 $sheet->getStyle('B3')->getAlignment()->setHorizontal('center'); // Jenis Instansi center aligned
+                
+                // Center-align the entire No. column (A) including data rows
+                $lastRow = $sheet->getHighestRow();
+                $sheet->getStyle('A3:A' . $lastRow)->getAlignment()->setHorizontal('center');
                 
                 // Set lebar kolom
                 $sheet->getColumnDimension('A')->setWidth(8); // Kolom No. 

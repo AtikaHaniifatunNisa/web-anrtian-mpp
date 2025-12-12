@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 
 class TestPrintPage extends Page
 {
@@ -11,6 +12,16 @@ class TestPrintPage extends Page
     protected static ?string $navigationLabel = 'Test Print';
     protected static ?string $navigationGroup = 'Testing';
     protected static ?string $navigationIcon = 'heroicon-o-printer';
+    
+    public static function canAccess(): bool
+    {
+        return Auth::user()->role === 'admin';
+    }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->role === 'admin';
+    }
 
     public function testPrint()
     {

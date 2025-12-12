@@ -34,20 +34,22 @@
         </table>
     </div>
 
-    <h2 class="text-xl font-bold mt-8 mb-4">Rekap Per Hari</h2>
-    {{ $this->form }}
-
     {{-- REKAP PER HARI --}}
-    <h2 class="text-xl font-bold my-6">Rekap Per Hari</h2>
+    <div class="flex justify-between items-center my-6">
+        <h2 class="text-xl font-bold">Rekap Per Hari</h2>
+        <x-filament::button wire:click="exportExcel" color="success" icon="heroicon-o-arrow-down-tray">
+            Export Excel
+        </x-filament::button>
+    </div>
 
     <div class="flex items-center space-x-4 mb-4">
         <div>
-            <label class="block text-sm font-medium">Dari Tanggal</label>
-            <input type="date" wire:model="from" class="border p-2 rounded">
+            <label for="monitoring-from-date" class="block text-sm font-medium">Dari Tanggal</label>
+            <input type="date" id="monitoring-from-date" name="monitoring-from-date" wire:model="from" class="border p-2 rounded" aria-label="Dari Tanggal">
         </div>
         <div>
-            <label class="block text-sm font-medium">Sampai Tanggal</label>
-            <input type="date" wire:model="to" class="border p-2 rounded">
+            <label for="monitoring-to-date" class="block text-sm font-medium">Sampai Tanggal</label>
+            <input type="date" id="monitoring-to-date" name="monitoring-to-date" wire:model="to" class="border p-2 rounded" aria-label="Sampai Tanggal">
         </div>
     </div>
     
@@ -68,11 +70,6 @@
             @endforeach
             </tbody>
         </table>
-    </div>
-
-
-    <div class="mt-4">
-        <x-filament::button wire:click="exportExcel">Export Excel</x-filament::button>
     </div>
 
     @push('scripts')

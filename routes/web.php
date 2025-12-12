@@ -152,3 +152,7 @@ Route::get('/api/audio/announcement', [AudioController::class, 'getAnnouncementA
 Route::post('/api/audio/upload', [AudioController::class, 'uploadAudio'])->name('api.audio.upload');
 Route::get('/api/audio/list', [AudioController::class, 'getAudioList'])->name('api.audio.list');
 Route::delete('/api/audio/delete', [AudioController::class, 'deleteAudio'])->name('api.audio.delete');
+
+// Public Queue Kiosk (No Login Required)
+Route::get('/kiosk/cetak-antrian', [App\Http\Controllers\PublicQueueKioskController::class, 'index'])->name('public.queue-kiosk');
+Route::get('/kiosk/cetak-antrian/select-service/{serviceId}', [App\Http\Controllers\PublicQueueKioskController::class, 'selectService'])->name('public.queue-kiosk.select-service');

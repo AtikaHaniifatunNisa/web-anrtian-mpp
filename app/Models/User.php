@@ -27,6 +27,7 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'plain_password',
@@ -66,5 +67,10 @@ class User extends Authenticatable implements FilamentUser
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+    
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
     }
 }

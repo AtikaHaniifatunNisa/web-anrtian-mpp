@@ -1,5 +1,4 @@
 <x-filament-panels::page>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -93,7 +92,15 @@
                                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500' }}">
                             <div class="text-center">
                                 <div class="text-lg font-bold">{{ $counter->name }}</div>
-                                <div class="text-sm opacity-90">{{ $counter->service?->name ?? 'Tidak ada layanan' }}</div>
+                                <div class="text-sm opacity-90 mt-2">
+                                    @if($counter->service)
+                                        <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded-full">
+                                            {{ $counter->service->name }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-500">Tidak ada layanan</span>
+                                    @endif
+                                </div>
                                 <div class="flex items-center justify-center mt-2">
                                     <div class="w-2 h-2 {{ $counter->is_active ? 'bg-green-400' : 'bg-gray-400' }} rounded-full mr-2"></div>
                                     <span class="text-xs">{{ $counter->is_active ? 'Aktif' : 'Nonaktif' }}</span>
@@ -120,7 +127,21 @@
         </div>
 
         {{-- Main Content --}}
-        @if ($this->selectedCounter)
+        @php
+            // Debug: Pastikan counter terpilih
+            $selectedCounter = $this->selectedCounter;
+            $selectedCounterId = $this->selectedCounterId;
+            
+            // Jika operator dan counter belum terpilih, coba ambil dari user
+            if (!$selectedCounter && auth()->check() && auth()->user()->role === 'operator' && auth()->user()->counter_id) {
+                $selectedCounterId = auth()->user()->counter_id;
+                $selectedCounter = \App\Models\Counter::withoutGlobalScopes()
+                    ->with(['service', 'instansi', 'assignedServices'])
+                    ->find($selectedCounterId);
+            }
+        @endphp
+        
+        @if ($selectedCounter)
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Current Queue Section -->
                 <div class="lg:col-span-2 space-y-6">
@@ -239,9 +260,8 @@
                             
                             <div class="space-y-3">
                             <button wire:click="callNext" 
-                                    onclick="enableAudio()"
-                                @if (!$this->selectedCounter->is_active) disabled @endif
-                                class="w-full py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-lg {{ !$this->selectedCounter->is_active 
+                                @if (!$selectedCounter || !$selectedCounter->is_active) disabled @endif
+                                class="w-full py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-lg {{ !$selectedCounter || !$selectedCounter->is_active 
                                     ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' 
                                     : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:scale-105' }}">
                                 <div class="flex items-center justify-center space-x-2">
@@ -250,17 +270,6 @@
                                     </svg>
                                     <span>Panggil Antrian Selanjutnya</span>
                                 </div>
-                            </button>
-                                
-                                <!-- Test Audio Button -->
-                                <button onclick="testAudioDirect()" 
-                                    class="w-full py-2 px-4 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-300 text-sm bg-green-500 text-white hover:bg-green-600">
-                                    <div class="flex items-center justify-center space-x-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                                        </svg>
-                                        <span>Test Audio</span>
-                                    </div>
                                 </button>
                             </div>
                         </div>
@@ -310,27 +319,44 @@
                     <!-- Counter Status -->
                     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 card-hover">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Status Loket</h3>
-                        <div class="text-center">
-                            <div class="w-20 h-20 bg-gradient-to-br from-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-500 to-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                @if($this->selectedCounter->is_active)
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                @else
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                @endif
+                        @if($selectedCounter)
+                            <div class="text-center">
+                                <div class="w-20 h-20 bg-gradient-to-br from-{{ $selectedCounter->is_active ? 'green' : 'red' }}-500 to-{{ $selectedCounter->is_active ? 'green' : 'red' }}-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                    @if($selectedCounter->is_active)
+                                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    @else
+                                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    @endif
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+                                    {{ strtoupper($selectedCounter->name) }}
+                                </p>
+                                <div class="mb-4">
+                                    @if($selectedCounter->service)
+                                        <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-3 py-1.5 rounded-full font-medium">
+                                            {{ $selectedCounter->service->name }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-500 text-sm">Tidak ada layanan</span>
+                                    @endif
+                                </div>
+                                <p class="text-xl font-bold text-{{ $selectedCounter->is_active ? 'green' : 'red' }}-600 mb-6">
+                                    {{ $selectedCounter->is_active ? 'SEDANG BUKA' : 'SEDANG TUTUP' }}
+                                </p>
+                                <button wire:click="toggleCounterStatus"
+                                    class="w-full bg-{{ $selectedCounter->is_active ? 'red' : 'green' }}-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-{{ $selectedCounter->is_active ? 'red' : 'green' }}-600 transition-colors duration-200 shadow-lg hover:shadow-xl">
+                                    {{ $selectedCounter->is_active ? 'Tutup Loket' : 'Buka Loket' }}
+                                </button>
                             </div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">{{ $this->selectedCounter->name }} - {{ $this->selectedCounter->service?->name ?? 'Tidak ada layanan' }}</p>
-                            <p class="text-xl font-bold text-{{ $this->selectedCounter->is_active ? 'green' : 'red' }}-600 mb-6">
-                                {{ $this->selectedCounter->is_active ? 'SEDANG BUKA' : 'SEDANG TUTUP' }}
-                            </p>
-                            <button wire:click="toggleCounterStatus"
-                                class="w-full bg-{{ $this->selectedCounter->is_active ? 'red' : 'green' }}-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-{{ $this->selectedCounter->is_active ? 'red' : 'green' }}-600 transition-colors duration-200 shadow-lg hover:shadow-xl">
-                                {{ $this->selectedCounter->is_active ? 'Tutup Loket' : 'Buka Loket' }}
-                            </button>
-                        </div>
+                        @else
+                            <div class="text-center text-gray-500 dark:text-gray-400">
+                                <p>Pilih loket untuk melihat status</p>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Statistics -->
@@ -395,8 +421,26 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">Silakan pilih loket</h3>
-                <p class="text-gray-500 dark:text-gray-400">Pilih loket terlebih dahulu untuk memulai manajemen antrian</p>
+                @php
+                    $user = auth()->user();
+                @endphp
+                @if($user && $user->role === 'operator' && $user->counter_id)
+                    <h3 class="text-xl font-semibold text-yellow-600 dark:text-yellow-400 mb-2">Memuat loket...</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">
+                        Sedang memuat loket dengan ID {{ $user->counter_id }}.
+                    </p>
+                    <p class="text-sm text-gray-400">
+                        Jika loket tidak muncul, silakan refresh halaman atau hubungi administrator.
+                    </p>
+                    <div class="mt-4">
+                        <button wire:click="$refresh" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            Refresh Halaman
+                        </button>
+                    </div>
+                @else
+                    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">Silakan pilih loket</h3>
+                    <p class="text-gray-500 dark:text-gray-400">Pilih loket terlebih dahulu untuk memulai manajemen antrian</p>
+                @endif
             </div>
         @endif
 
@@ -462,36 +506,6 @@
             enableAudio();
         };
         
-        // Test audio function
-        window.testAudioDirect = () => {
-            console.log('=== TESTING AUDIO DIRECT ===');
-            
-            // Enable audio first
-            if (!audioEnabled) {
-                enableAudio();
-            }
-            
-            const testData = {
-                queueNumber: '1A05',
-                serviceName: 'Pengambilan Izin',
-                servicePrefix: '1A',
-                counterName: 'ZONA 1',
-                zona: 'UPTSP'
-            };
-            
-            // Format instansi - UPTSP dieja, yang lain tidak
-            let testInstansiText = testData.zona.toLowerCase();
-            if (testData.zona.toUpperCase() === 'UPTSP') {
-                testInstansiText = 'U-P-T-S-P';
-            }
-            
-            const announcementText = `nomor antrian ${testData.queueNumber}, layanan ${testData.serviceName.toLowerCase()}, menuju ke loket ${testData.servicePrefix || 'A'}, ${testInstansiText}`;
-            
-            console.log('Testing with text:', announcementText);
-            
-            // Directly try audio solutions without going through playResponsiveVoiceAnnouncement
-            tryAudioSolutions(announcementText, testData);
-        };
         
         document.addEventListener('livewire:initialized', () => {
             console.log('Livewire initialized, setting up event listeners...');
@@ -514,12 +528,7 @@
                         audioNotice.style.display = 'none';
                     }
                     
-                    // Test speech synthesis
-                    if ('speechSynthesis' in window) {
-                        const testUtterance = new SpeechSynthesisUtterance('Audio enabled');
-                        testUtterance.volume = 0.1;
-                        speechSynthesis.speak(testUtterance);
-                    }
+                    // Audio enabled silently without test sound
                 }
             };
             
@@ -546,21 +555,31 @@
                 console.log('Announcement data:', announcementData);
                 
                 // Update tampilan TV
-                document.getElementById('announcedQueueNumber').textContent = announcementData.queueNumber;
-                document.getElementById('announcedService').textContent = announcementData.serviceName;
-                document.getElementById('announcedCounter').textContent = `${announcementData.counterName} - ${announcementData.zona}`;
-                document.getElementById('announcedTime').textContent = `Dipanggil pada: ${announcementData.calledAt}`;
+                const queueNumberEl = document.getElementById('announcedQueueNumber');
+                const serviceEl = document.getElementById('announcedService');
+                const counterEl = document.getElementById('announcedCounter');
+                const timeEl = document.getElementById('announcedTime');
+                
+                if (queueNumberEl) queueNumberEl.textContent = announcementData.queueNumber;
+                if (serviceEl) serviceEl.textContent = announcementData.serviceName;
+                if (counterEl) counterEl.textContent = `${announcementData.counterName} - ${announcementData.zona}`;
+                if (timeEl) timeEl.textContent = `Dipanggil pada: ${announcementData.calledAt}`;
                 
                 // Tampilkan notifikasi TV
-                tvNotification.classList.remove('hidden');
+                if (tvNotification) {
+                    tvNotification.classList.remove('hidden');
+                }
                 
-                // Putar suara pemanggilan
+                // SELALU putar suara pemanggilan - ini akan diputar di browser petugas loket
+                // Tidak peduli apakah audio sudah di-enable sebelumnya atau belum
                 playAnnouncementSound(announcementData);
                 
-                // Sembunyikan notifikasi setelah 5 detik
+                // Sembunyikan notifikasi setelah 10 detik (lebih lama untuk memastikan audio selesai)
                 setTimeout(() => {
-                    tvNotification.classList.add('hidden');
-                }, 5000);
+                    if (tvNotification) {
+                        tvNotification.classList.add('hidden');
+                    }
+                }, 10000);
             });
             
             function playAnnouncementSound(data) {
@@ -575,13 +594,20 @@
                 console.log('=== PLAYING RESPONSIVEVOICE ANNOUNCEMENT ===');
                 console.log('Data:', data);
                 
-                // Enable audio silently without playing test audio
+                // SELALU enable audio ketika ada panggilan, tidak peduli status sebelumnya
                 if (!audioEnabled) {
                     console.log('Audio not enabled yet, enabling now...');
                     audioEnabled = true;
+                    
+                    // Hide audio notice
+                    const audioNotice = document.getElementById('audioNotice');
+                    if (audioNotice) {
+                        audioNotice.style.display = 'none';
+                    }
                 }
                 
-                const queueNumber = data.queueNumber || 'Tidak diketahui';
+                // Ganti tanda minus dengan spasi agar tidak terbaca oleh audio
+                const queueNumber = (data.queueNumber || 'Tidak diketahui').replace(/-/g, ' ');
                 const serviceName = (data.serviceName || 'Layanan').toLowerCase();
                 const servicePrefix = data.servicePrefix || 'A';
                 const zona = data.zona || 'Zona'; // Sekarang menggunakan counter.name
@@ -603,7 +629,8 @@
                 
                 console.log('Announcement text:', announcementText);
                 
-                // Try multiple audio solutions
+                // SELALU coba putar audio, tidak peduli status audioEnabled
+                // Ini memastikan suara selalu diputar di browser petugas loket
                 tryAudioSolutions(announcementText, data);
             }
             
@@ -613,7 +640,7 @@
                 console.log('ResponsiveVoice available:', typeof responsiveVoice !== 'undefined');
                 console.log('Speech Synthesis available:', 'speechSynthesis' in window);
                 
-                // Solution 1: Try ResponsiveVoice
+                // Solution 1: Try ResponsiveVoice (PRIORITAS UTAMA)
                 if (typeof responsiveVoice !== 'undefined') {
                     console.log('Trying ResponsiveVoice...');
                     console.log('Voice:', RESPONSIVEVOICE_CONFIG.voice);
@@ -622,31 +649,38 @@
                     console.log('Volume:', RESPONSIVEVOICE_CONFIG.volume);
                     
                     try {
-                        responsiveVoice.speak(announcementText, RESPONSIVEVOICE_CONFIG.voice, {
-                            rate: RESPONSIVEVOICE_CONFIG.rate,
-                            pitch: RESPONSIVEVOICE_CONFIG.pitch,
-                            volume: RESPONSIVEVOICE_CONFIG.volume,
-                            onstart: function() {
-                                console.log('✅ ResponsiveVoice started successfully');
-                            },
-                            onend: function() {
-                                console.log('✅ ResponsiveVoice completed successfully');
-                            },
-                            onerror: function(error) {
-                                console.error('❌ ResponsiveVoice failed:', error);
-                                // Try next solution
-                                trySpeechSynthesis(announcementText);
-                            }
-                        });
+                        // Stop any ongoing speech first
+                        responsiveVoice.cancel();
+                        
+                        // Wait a bit before speaking to ensure clean start
+                        setTimeout(() => {
+                            responsiveVoice.speak(announcementText, RESPONSIVEVOICE_CONFIG.voice, {
+                                rate: RESPONSIVEVOICE_CONFIG.rate,
+                                pitch: RESPONSIVEVOICE_CONFIG.pitch,
+                                volume: RESPONSIVEVOICE_CONFIG.volume,
+                                onstart: function() {
+                                    console.log('✅ ResponsiveVoice started successfully');
+                                },
+                                onend: function() {
+                                    console.log('✅ ResponsiveVoice completed successfully');
+                                },
+                                onerror: function(error) {
+                                    console.error('❌ ResponsiveVoice failed:', error);
+                                    // Try next solution
+                                    trySpeechSynthesis(announcementText);
+                                }
+                            });
+                        }, 100);
                         return; // Success, exit
                     } catch (error) {
                         console.error('❌ ResponsiveVoice error:', error);
+                        // Continue to next solution
                     }
                 } else {
                     console.log('❌ ResponsiveVoice not available');
                 }
                 
-                // Solution 2: Try Speech Synthesis
+                // Solution 2: Try Speech Synthesis (FALLBACK)
                 trySpeechSynthesis(announcementText);
             }
             
@@ -656,33 +690,39 @@
                 
                 if ('speechSynthesis' in window) {
                     try {
-                        const utterance = new SpeechSynthesisUtterance(announcementText);
-                        utterance.lang = 'id-ID';
-                        utterance.rate = 0.8;
-                        utterance.pitch = 1;
-                        utterance.volume = 1;
+                        // Cancel any ongoing speech first
+                        speechSynthesis.cancel();
                         
-                        console.log('Speech Synthesis settings:');
-                        console.log('  Language:', utterance.lang);
-                        console.log('  Rate:', utterance.rate);
-                        console.log('  Pitch:', utterance.pitch);
-                        console.log('  Volume:', utterance.volume);
-                        
-                        utterance.onstart = function() {
-                            console.log('✅ Speech Synthesis started successfully');
-                        };
-                        
-                        utterance.onend = function() {
-                            console.log('✅ Speech Synthesis completed successfully');
-                        };
-                        
-                        utterance.onerror = function(error) {
-                            console.error('❌ Speech Synthesis failed:', error);
-                            // Try next solution
-                            tryAudioFile();
-                        };
-                        
-                        speechSynthesis.speak(utterance);
+                        // Wait a bit before speaking to ensure clean start
+                        setTimeout(() => {
+                            const utterance = new SpeechSynthesisUtterance(announcementText);
+                            utterance.lang = 'id-ID';
+                            utterance.rate = 0.8;
+                            utterance.pitch = 1;
+                            utterance.volume = 1;
+                            
+                            console.log('Speech Synthesis settings:');
+                            console.log('  Language:', utterance.lang);
+                            console.log('  Rate:', utterance.rate);
+                            console.log('  Pitch:', utterance.pitch);
+                            console.log('  Volume:', utterance.volume);
+                            
+                            utterance.onstart = function() {
+                                console.log('✅ Speech Synthesis started successfully');
+                            };
+                            
+                            utterance.onend = function() {
+                                console.log('✅ Speech Synthesis completed successfully');
+                            };
+                            
+                            utterance.onerror = function(error) {
+                                console.error('❌ Speech Synthesis failed:', error);
+                                // Try next solution
+                                tryAudioFile();
+                            };
+                            
+                            speechSynthesis.speak(utterance);
+                        }, 100);
                         return; // Success, exit
                     } catch (error) {
                         console.error('❌ Speech Synthesis error:', error);
@@ -884,7 +924,8 @@
                     const utterance = new SpeechSynthesisUtterance();
                     
                     // Handle undefined values dengan data yang lebih lengkap
-                    const queueNumber = data.queueNumber || 'Tidak diketahui';
+                    // Ganti tanda minus dengan spasi agar tidak terbaca oleh audio
+                    const queueNumber = (data.queueNumber || 'Tidak diketahui').replace(/-/g, ' ');
                     const serviceName = data.serviceName || 'Layanan';
                     const counterName = data.counterName || 'Loket';
                     const zona = data.zona || 'Zona';

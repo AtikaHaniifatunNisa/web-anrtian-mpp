@@ -6,6 +6,7 @@ use App\Models\Counter;
 use App\Models\Service;
 use App\Models\Instansi;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class QueueKiosk extends Page
@@ -15,6 +16,16 @@ class QueueKiosk extends Page
     protected static ?string $navigationLabel = 'Kiosk Cetak Antrian';
     protected static ?string $navigationGroup = 'Display Kiosk';
     protected static ?string $navigationIcon = 'heroicon-o-printer';
+    
+    public static function canAccess(): bool
+    {
+        return Auth::user()->role === 'admin';
+    }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->role === 'admin';
+    }
 
     public $selectedCounter = null;        // key dari array $counters (1..5)
     public $selectedCounterDbId = null;    // <-- ID counter sebenarnya di DB
@@ -41,7 +52,7 @@ class QueueKiosk extends Page
     protected function getViewData(): array
     {
         return [
-            'countersDb' => Counter::with('instansis.services')->get(),
+            'countersDb' => Counter::with(['instansi', 'service'])->get(),
         ];
     }
 
@@ -52,10 +63,15 @@ class QueueKiosk extends Page
         $this->selectedService  = null;
         $this->services = collect();
     
+        if (!isset($this->counters[$this->selectedCounter])) {
+            $this->dispatch('notify', type: 'error', message: "Zona tidak ditemukan.");
+            return;
+        }
+    
         $counterName = $this->counters[$this->selectedCounter]['name'] ?? null;
     
         // Ambil MIN(id) untuk nama zona tsb (ZONA 1/2/3/4/5) - case-insensitive
-        $this->selectedCounterDbId = \App\Models\Counter::whereRaw('UPPER(name) = UPPER(?)', [$counterName])
+        $this->selectedCounterDbId = Counter::whereRaw('UPPER(name) = UPPER(?)', [$counterName])
             ->min('id');
     
         if (!$this->selectedCounterDbId) {
@@ -64,7 +80,7 @@ class QueueKiosk extends Page
             return;
         }
     
-        $this->instansis = \App\Models\Instansi::where('counter_id', $this->selectedCounterDbId)
+        $this->instansis = Instansi::where('counter_id', $this->selectedCounterDbId)
             ->orderBy('nama_instansi')
             ->get();
             
@@ -109,6 +125,11 @@ class QueueKiosk extends Page
         Log::info('selectService called with serviceId: ' . $serviceId);
         $this->selectedService = Service::find($serviceId);
         Log::info('Selected service: ' . ($this->selectedService ? $this->selectedService->name : 'null'));
+        
+        // Auto-print struk when service is selected
+        if ($this->selectedService) {
+            $this->printStruk($serviceId);
+        }
     }
 
     public function resetInstansi()
@@ -160,7 +181,10 @@ class QueueKiosk extends Page
             Log::info('Queue created with ID: ' . $queue->id);
             
             // Redirect ke PDF generator
-            $zona = $this->counters[$this->selectedCounter]['name'] ?? 'Zona 1';
+            $zona = 'Zona 1';
+            if ($this->selectedCounter && isset($this->counters[$this->selectedCounter])) {
+                $zona = $this->counters[$this->selectedCounter]['name'] ?? 'Zona 1';
+            }
             $pdfUrl = route('struk.generate', [
                 'service_id' => $serviceId,
                 'queue_id' => $queue->id,
@@ -183,7 +207,7 @@ class QueueKiosk extends Page
     {
         // Generate nomor antrian berdasarkan prefix dan padding
         $prefix = $service->prefix ?? 'A';
-        $padding = $service->padding ?? 3;
+        $padding = $service->padding ?? 0;
         
         // Cari nomor terakhir untuk layanan ini hari ini
         $lastQueue = \App\Models\Queue::where('service_id', $service->id)
@@ -191,9 +215,14 @@ class QueueKiosk extends Page
             ->orderBy('id', 'desc')
             ->first();
         
-        $nextNumber = $lastQueue ? (intval(substr($lastQueue->number, strlen($prefix))) + 1) : 1;
+        $nextNumber = $lastQueue ? (intval(substr($lastQueue->number, strlen($prefix) + 1))) + 1 : 1;
         
-        return $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+        // Jika padding = 0, tidak perlu str_pad
+        if ($padding == 0) {
+            return $prefix . '-' . $nextNumber;
+        }
+        
+        return $prefix . '-' . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
     }
 
     public function printBarcode($serviceId)
@@ -217,7 +246,10 @@ class QueueKiosk extends Page
         ]);
         
         // Redirect ke halaman barcode
-        $zona = $this->counters[$this->selectedCounter]['name'] ?? 'Zona 1';
+        $zona = 'Zona 1';
+        if ($this->selectedCounter && isset($this->counters[$this->selectedCounter])) {
+            $zona = $this->counters[$this->selectedCounter]['name'] ?? 'Zona 1';
+        }
         $barcodeUrl = route('barcode.show', [
             'service_id' => $serviceId,
             'queue_id' => $queue->id,

@@ -35,6 +35,16 @@ class UserResource extends Resource
     {
         return Auth::check() && in_array(Auth::user()->role, ['admin', 'operator']);
     }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::check() && Auth::user()->role === 'admin';
+    }
+    
+    public static function canViewAny(): bool
+    {
+        return Auth::check() && Auth::user()->role === 'admin';
+    }
 
     public static function canEdit(Model $record): bool
     {
@@ -66,10 +76,11 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
+                Forms\Components\TextInput::make('username')
+                    ->label('Username')
                     ->required()
                     ->maxLength(255)
+                    ->unique(ignoreRecord: true)
                     ->disabled(fn($record) => $record && $record instanceof User && $record->role === 'admin'),
                 Forms\Components\TextInput::make('password')
                     ->password()
@@ -111,7 +122,15 @@ class UserResource extends Resource
                     ->options(\App\Models\Service::where('is_active', true)->pluck('name', 'id'))
                     ->visible(fn(Get $get) => $get('role') === 'operator')
                     ->required(fn(Get $get) => $get('role') === 'operator')
+                    ->disabled(fn() => Auth::user()->role === 'operator'),
+                Forms\Components\Select::make('counter_id')
+                    ->label('Loket')
+                    ->options(\App\Models\Counter::withoutGlobalScopes()->orderBy('name')->pluck('name', 'id'))
+                    ->visible(fn(Get $get) => $get('role') === 'operator')
+                    ->required(fn(Get $get) => $get('role') === 'operator')
                     ->disabled(fn() => Auth::user()->role === 'operator')
+                    ->searchable()
+                    ->preload()
             ]);
     }
 
@@ -121,12 +140,17 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Pengguna'),
-                Tables\Columns\TextColumn::make('email'),
+                Tables\Columns\TextColumn::make('username')
+                    ->label('Username')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('role')
                     ->label('Peran'),
                 Tables\Columns\TextColumn::make('service.name')
-                ->label('Layanan')
-                ->formatStateUsing(fn (string $state, User $record): string => $record->role === 'admin' ? 'Semua' : $state)
+                    ->label('Layanan')
+                    ->formatStateUsing(fn (?string $state, User $record): string => $record->role === 'admin' ? 'Semua' : ($state ?? '-')),
+                Tables\Columns\TextColumn::make('counter.name')
+                    ->label('Loket')
+                    ->formatStateUsing(fn (?string $state, User $record): string => $record->role === 'admin' ? 'Semua' : ($state ?? '-'))
             ])
             ->filters([
                 //

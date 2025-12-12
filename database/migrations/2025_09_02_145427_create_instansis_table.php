@@ -15,10 +15,8 @@ return new class extends Migration
             $table->id('instansi_id');
             $table->string('nama_instansi');
             $table->text('deskripsi')->nullable();
-                        // foreign key ke counters
-            $table->foreignId('counter_id')
-                  ->constrained('counters') // pastikan pakai nama tabel counters
-                  ->cascadeOnDelete();
+            // counter_id akan ditambahkan di migration terpisah setelah tabel counters dibuat
+            // Migration: 2025_09_19_011552_add_counter_id_to_instansis_table.php
             $table->timestamps();
         });
     }

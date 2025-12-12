@@ -20,6 +20,16 @@ class MonitoringDashboard extends Page implements Forms\Contracts\HasForms
     protected static ?string $navigationLabel = 'Monitoring Dashboard';
     protected static ?string $navigationGroup = 'Laporan & Monitoring';
     protected static string $view             = 'filament.pages.monitoring-dashboard';
+    
+    public static function canAccess(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->role === 'admin';
+    }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->role === 'admin';
+    }
 
     // filter tanggal sederhana
     public ?string $from = null;

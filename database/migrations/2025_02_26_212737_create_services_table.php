@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('prefix');
             $table->integer('padding');
             $table->boolean('is_active')->default(true);
-            $table->foreignId('instansi_id')->constrained()->cascadeOnDelete();
+            // instansi_id akan ditambahkan di migration terpisah setelah tabel instansis dibuat
+            // Migration: 2025_09_15_025713_add_instansi_id_to_services_table.php
             $table->timestamps();
         
         });

@@ -21,6 +21,16 @@ class DashboardCallKiosk extends Page
     protected static ?string $title = 'Loket Panggilan Antrian';
     protected static ?string $navigationLabel = 'Loket Panggilan';
     protected static ?string $navigationIcon = 'heroicon-o-speaker-wave';
+    
+    public static function canAccess(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::check();
+    }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::check();
+    }
 
 
     // --- Properti untuk State Komponen ---
@@ -35,14 +45,59 @@ class DashboardCallKiosk extends Page
     public function mount(): void
     {
         $user = Auth::user();
+        
+        Log::info('DashboardCallKiosk mount started', [
+            'user_id' => $user?->id,
+            'user_role' => $user?->role,
+            'user_counter_id' => $user?->counter_id
+        ]);
 
         // Jika operator, batasi hanya ke loket yang ditugaskan
         if ($user && $user->role === 'operator' && $user->counter_id) {
-            $this->counters = Counter::with(['service', 'instansi'])->where('id', $user->counter_id)->get();
-            $this->selectedCounterId = $user->counter_id;
+            // Gunakan withoutGlobalScopes untuk memastikan counter ditemukan
+            $counter = Counter::withoutGlobalScopes()
+                ->with(['service', 'instansi', 'assignedServices'])
+                ->find($user->counter_id);
+            
+            if ($counter) {
+                $this->counters = collect([$counter]);
+                $this->selectedCounterId = $counter->id; // Pastikan menggunakan counter->id, bukan user->counter_id
+                
+                // Cari service yang memiliki counter_id yang sama
+                $servicesByCounterId = Service::where('counter_id', $counter->id)->pluck('id', 'name')->toArray();
+                
+                // Log untuk debugging
+                Log::info('Operator counter loaded successfully', [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'counter_id' => $counter->id,
+                    'counter_name' => $counter->name,
+                    'service_id' => $counter->service_id,
+                    'service_name' => $counter->service?->name,
+                    'instansi_id' => $counter->instansi_id,
+                    'instansi_name' => $counter->instansi?->nama_instansi,
+                    'assigned_services_count' => $counter->assignedServices->count(),
+                    'assigned_services' => $counter->assignedServices->pluck('id', 'name')->toArray(),
+                    'services_by_counter_id' => $servicesByCounterId,
+                    'selected_counter_id' => $this->selectedCounterId,
+                    'is_active' => $counter->is_active,
+                    'counter_loaded' => true,
+                    'counters_collection_count' => $this->counters->count()
+                ]);
+            } else {
+                $this->counters = collect();
+                $this->selectedCounterId = null;
+                
+                Log::error('Counter not found for operator', [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'user_counter_id' => $user->counter_id,
+                    'all_counters' => Counter::withoutGlobalScopes()->pluck('id', 'name')->toArray()
+                ]);
+            }
         } else {
             // Admin bisa melihat semua loket yang ada (sama seperti di manajemen loket)
-            $this->counters = Counter::with(['service', 'instansi'])
+            $this->counters = Counter::with(['service', 'instansi', 'assignedServices'])
                 ->orderBy('name')
                 ->get();
             if ($this->counters->isNotEmpty()) {
@@ -58,10 +113,47 @@ class DashboardCallKiosk extends Page
      */
     public function getSelectedCounterProperty(): ?Counter
     {
+        // Jika selectedCounterId null, coba ambil dari user untuk operator
         if (!$this->selectedCounterId) {
-            return null;
+            $user = Auth::user();
+            if ($user && $user->role === 'operator' && $user->counter_id) {
+                $this->selectedCounterId = $user->counter_id;
+                Log::info('getSelectedCounterProperty: Set selectedCounterId from user', [
+                    'user_id' => $user->id,
+                    'selected_counter_id' => $this->selectedCounterId
+                ]);
+            } else {
+                Log::warning('getSelectedCounterProperty: selectedCounterId is null', [
+                    'user_id' => Auth::id(),
+                    'user_role' => Auth::user()?->role,
+                    'user_counter_id' => Auth::user()?->counter_id
+                ]);
+                return null;
+            }
         }
-        return Counter::find($this->selectedCounterId);
+        
+        // Pastikan counter dimuat dengan relasi service dan instansi
+        // Gunakan withoutGlobalScopes untuk operator agar counter selalu ditemukan
+        $user = Auth::user();
+        $query = Counter::with(['service', 'instansi', 'assignedServices']);
+        
+        if ($user && $user->role === 'operator') {
+            $query = $query->withoutGlobalScopes();
+        }
+        
+        $counter = $query->find($this->selectedCounterId);
+        
+        if (!$counter) {
+            Log::error('getSelectedCounterProperty: Counter not found', [
+                'selected_counter_id' => $this->selectedCounterId,
+                'user_id' => $user?->id,
+                'user_role' => $user?->role,
+                'user_counter_id' => $user?->counter_id,
+                'all_counters' => Counter::withoutGlobalScopes()->pluck('id', 'name')->toArray()
+            ]);
+        }
+        
+        return $counter;
     }
 
     // --- Aksi yang Dipanggil dari View ---
@@ -81,6 +173,24 @@ class DashboardCallKiosk extends Page
         }
 
         $this->selectedCounterId = $counterId;
+        
+        // Log untuk debugging
+        $user = Auth::user();
+        $query = Counter::with(['service', 'instansi', 'assignedServices']);
+        
+        if ($user && $user->role === 'operator') {
+            $query = $query->withoutGlobalScopes();
+        }
+        
+        $counter = $query->find($counterId);
+        Log::info('Counter selected', [
+            'counter_id' => $counterId,
+            'counter_name' => $counter?->name,
+            'service_id' => $counter?->service_id,
+            'service_name' => $counter?->service?->name,
+            'instansi_id' => $counter?->instansi_id,
+        ]);
+        
         // Livewire akan otomatis me-render ulang komponen dengan data baru
     }
 
@@ -106,21 +216,118 @@ class DashboardCallKiosk extends Page
             return;
         }
         
-        // Cari antrian berikutnya berdasarkan service_id atau counter_id
+        // Cari antrian berikutnya berdasarkan service_id dari counter
+        // Hanya ambil service yang benar-benar terkait dengan counter, bukan semua service di zona
         $nextQueue = null;
+        
+        // Kumpulkan semua service_id yang terkait dengan counter ini
+        $serviceIds = [];
+        
+        // 1. Cek service_id langsung dari counter
         if ($this->selectedCounter->service_id) {
-            $nextQueue = Queue::where('service_id', $this->selectedCounter->service_id)
+            $serviceIds[] = $this->selectedCounter->service_id;
+        }
+        
+        // 2. Cek relasi many-to-many counter_service
+        $assignedServices = $this->selectedCounter->assignedServices;
+        if ($assignedServices->isNotEmpty()) {
+            foreach ($assignedServices as $service) {
+                if (!in_array($service->id, $serviceIds)) {
+                    $serviceIds[] = $service->id;
+                }
+            }
+        }
+        
+        // 3. Cek service dari relasi service() jika ada
+        if ($this->selectedCounter->service && !in_array($this->selectedCounter->service->id, $serviceIds)) {
+            $serviceIds[] = $this->selectedCounter->service->id;
+        }
+        
+        // 4. Cari service yang memiliki counter_id yang sama dengan counter ini
+        $servicesByCounterId = Service::where('counter_id', $this->selectedCounter->id)->pluck('id')->toArray();
+        foreach ($servicesByCounterId as $serviceId) {
+            if (!in_array($serviceId, $serviceIds)) {
+                $serviceIds[] = $serviceId;
+            }
+        }
+        
+        // Hapus fallback berdasarkan prefix dan instansi_id yang terlalu luas
+        // Ini menyebabkan semua antrian di zona yang sama muncul
+        
+        // Kumpulkan semua service yang ditemukan untuk logging
+        $allServicesFound = [];
+        if (!empty($serviceIds)) {
+            $allServicesFound = Service::whereIn('id', $serviceIds)
+                ->get(['id', 'name', 'prefix'])
+                ->map(function($s) {
+                    return ['id' => $s->id, 'name' => $s->name, 'prefix' => $s->prefix];
+                })
+                ->toArray();
+        }
+        
+        Log::info('Service IDs for counter', [
+            'counter_id' => $this->selectedCounter->id,
+            'counter_name' => $this->selectedCounter->name,
+            'service_ids' => $serviceIds,
+            'services_found' => $allServicesFound,
+            'direct_service_id' => $this->selectedCounter->service_id,
+            'assigned_services_count' => $assignedServices->count(),
+            'services_by_counter_id' => $servicesByCounterId,
+            'prefix_patterns' => $prefixPatterns ?? [],
+            'total_service_ids' => count($serviceIds)
+        ]);
+        
+        // Jika tidak ada service_id sama sekali, tampilkan error
+        if (empty($serviceIds)) {
+            Log::warning('Counter does not have any service_id', [
+                'counter_id' => $this->selectedCounter->id,
+                'counter_name' => $this->selectedCounter->name,
+                'counter_data' => $this->selectedCounter->toArray()
+            ]);
+            
+            // Dispatch notification untuk user
+            $this->dispatch('notify', [
+                'type' => 'warning',
+                'message' => 'Loket ' . $this->selectedCounter->name . ' belum memiliki layanan yang ditetapkan. Silakan hubungi administrator.'
+            ]);
+            return;
+        }
+        
+        // Cari antrian berdasarkan service_id yang terkait dengan counter
+        $nextQueue = Queue::whereIn('service_id', $serviceIds)
+            ->where('status', 'waiting')
+            ->whereNull('called_at')
+            ->whereDate('created_at', now()->format('Y-m-d'))
+            ->orderBy('created_at', 'asc')
+            ->first();
+        
+        // Log untuk debugging
+        if (!$nextQueue) {
+            $waitingQueuesCount = Queue::whereIn('service_id', $serviceIds)
                 ->where('status', 'waiting')
-                ->where('called_at', null)
                 ->whereDate('created_at', now()->format('Y-m-d'))
-                ->orderBy('created_at')
-                ->first();
-        } else {
+                ->count();
+            
+            Log::info('No queue found by service_id', [
+                'counter_id' => $this->selectedCounter->id,
+                'counter_name' => $this->selectedCounter->name,
+                'service_ids' => $serviceIds,
+                'waiting_queues_count' => $waitingQueuesCount,
+                'all_waiting_queues' => Queue::where('status', 'waiting')
+                    ->whereDate('created_at', now()->format('Y-m-d'))
+                    ->pluck('service_id', 'number')
+                    ->toArray()
+            ]);
+        }
+        
+        // Jika tidak ada antrian dengan service_id, coba cari berdasarkan counter_id (fallback)
+        if (!$nextQueue) {
+            Log::info('No queue found by service_id, trying counter_id fallback');
             $nextQueue = Queue::where('counter_id', $this->selectedCounter->id)
                 ->where('status', 'waiting')
-                ->where('called_at', null)
+                ->whereNull('called_at')
                 ->whereDate('created_at', now()->format('Y-m-d'))
-                ->orderBy('created_at')
+                ->orderBy('created_at', 'asc')
                 ->first();
         }
 
@@ -140,7 +347,7 @@ class DashboardCallKiosk extends Page
             
             // Refresh queue dengan relationships yang lengkap
             $nextQueue->refresh();
-            $nextQueue->load(['service', 'counter.instansi']);
+            $nextQueue->load(['service', 'counter.instansi', 'counter.assignedServices']);
             
             // Dispatch event untuk suara pemanggilan dan tampilan TV
             $serviceName = $nextQueue->service ? $nextQueue->service->name : 'Layanan';
@@ -296,36 +503,67 @@ class DashboardCallKiosk extends Page
                 ->orderByRaw("CASE WHEN status = 'serving' THEN 1 WHEN status = 'called' THEN 2 END")
                 ->first();
 
-            // Cari antrian yang menunggu untuk layanan di loket ini
+            // Kumpulkan semua service ID yang terkait dengan counter ini
+            // Hanya ambil service yang benar-benar terkait dengan counter, bukan semua service di zona
+            $serviceIds = [];
+            
+            // 1. Cek service_id langsung dari counter
             if ($counter->service_id) {
-                $waitingQueues = Queue::where('service_id', $counter->service_id)
-                    ->whereIn('status', ['waiting'])
-                    ->where('called_at', null)
-                    ->whereDate('created_at', now()->format('Y-m-d'))
-                    ->orderBy('created_at')
-                    ->get();
-
-                // Kalkulasi statistik berdasarkan service_id
-                $baseQuery = Queue::where('service_id', $counter->service_id)->whereDate('created_at', now()->format('Y-m-d'));
-                $stats['total'] = (clone $baseQuery)->count();
-                $stats['finished'] = (clone $baseQuery)->where('status', 'finished')->count();
-                $stats['waiting'] = $waitingQueues->count();
-                $stats['cancelled'] = (clone $baseQuery)->where('status', 'canceled')->count();
-            } else {
-                // Jika counter tidak memiliki service_id, cari berdasarkan counter_id
+                $serviceIds[] = $counter->service_id;
+            }
+            
+            // 2. Cek relasi many-to-many counter_service
+            $assignedServices = $counter->assignedServices;
+            if ($assignedServices->isNotEmpty()) {
+                foreach ($assignedServices as $service) {
+                    if (!in_array($service->id, $serviceIds)) {
+                        $serviceIds[] = $service->id;
+                    }
+                }
+            }
+            
+            // 3. Cek service dari relasi service() jika ada
+            if ($counter->service && !in_array($counter->service->id, $serviceIds)) {
+                $serviceIds[] = $counter->service->id;
+            }
+            
+            // 4. Cari service yang memiliki counter_id yang sama dengan counter ini
+            $servicesByCounterId = Service::where('counter_id', $counter->id)->pluck('id')->toArray();
+            foreach ($servicesByCounterId as $serviceId) {
+                if (!in_array($serviceId, $serviceIds)) {
+                    $serviceIds[] = $serviceId;
+                }
+            }
+            
+            // Hapus fallback berdasarkan prefix dan instansi_id yang terlalu luas
+            // Ini menyebabkan semua antrian di zona yang sama muncul
+            
+            // Jika tidak ada service_id, gunakan counter_id sebagai fallback
+            if (empty($serviceIds)) {
                 $waitingQueues = Queue::where('counter_id', $counter->id)
                     ->whereIn('status', ['waiting'])
-                    ->where('called_at', null)
+                    ->whereNull('called_at')
                     ->whereDate('created_at', now()->format('Y-m-d'))
-                    ->orderBy('created_at')
+                    ->orderBy('created_at', 'asc')
                     ->get();
-
-                $baseQuery = Queue::where('counter_id', $counter->id)->whereDate('created_at', now()->format('Y-m-d'));
-                $stats['total'] = (clone $baseQuery)->count();
-                $stats['finished'] = (clone $baseQuery)->where('status', 'finished')->count();
-                $stats['waiting'] = $waitingQueues->count();
-                $stats['cancelled'] = (clone $baseQuery)->where('status', 'canceled')->count();
+                
+                $baseQuery = Queue::where('counter_id', $counter->id)
+                    ->whereDate('created_at', now()->format('Y-m-d'));
+            } else {
+                $waitingQueues = Queue::whereIn('service_id', $serviceIds)
+                    ->whereIn('status', ['waiting'])
+                    ->whereNull('called_at')
+                    ->whereDate('created_at', now()->format('Y-m-d'))
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+                
+                $baseQuery = Queue::whereIn('service_id', $serviceIds)
+                    ->whereDate('created_at', now()->format('Y-m-d'));
             }
+            $stats['total'] = (clone $baseQuery)->count();
+            $stats['finished'] = (clone $baseQuery)->where('status', 'finished')->count();
+            $stats['waiting'] = $waitingQueues->count();
+            $stats['cancelled'] = (clone $baseQuery)->where('status', 'canceled')->count();
         }
 
         // Kirim semua data yang dibutuhkan ke view

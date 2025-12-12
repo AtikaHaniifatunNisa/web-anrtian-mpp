@@ -35,12 +35,18 @@ class QueueService
         $isSameDate = $currentDate === $lastQueueDate;
 
         $lastQueueNumber = $lastQueue ? intval(
-            substr($lastQueue->number, strlen($service->prefix))
+            substr($lastQueue->number, strlen($service->prefix) + 1)
         ) : 0;
 
-        $maximumNumber = pow(10, $service->padding) - 1;
-
-        $isMaximumNumber = $lastQueueNumber === $maximumNumber;
+        $padding = $service->padding ?? 0;
+        
+        // Jika padding = 0, tidak ada batas maksimum
+        if ($padding > 0) {
+            $maximumNumber = pow(10, $padding) - 1;
+            $isMaximumNumber = $lastQueueNumber === $maximumNumber;
+        } else {
+            $isMaximumNumber = false;
+        }
 
         if ($isSameDate && !$isMaximumNumber) {
             $newQueueNumber = $lastQueueNumber + 1;
@@ -48,15 +54,23 @@ class QueueService
             $newQueueNumber = 1;
         }
 
-        return $service->prefix . str_pad($newQueueNumber, $service->padding, "0", STR_PAD_LEFT);
+        // Jika padding = 0, tidak perlu str_pad
+        if ($padding == 0) {
+            return $service->prefix . '-' . $newQueueNumber;
+        }
+
+        return $service->prefix . '-' . str_pad($newQueueNumber, $padding, "0", STR_PAD_LEFT);
     }
 
     public function getNextQueue($counterId)
     {
         $counter = Counter::findOrFail($counterId);
+        
+        // Ambil service IDs yang terkait dengan counter ini
+        $serviceIds = $counter->service ? [$counter->service->id] : [];
 
         return Queue::where('status', 'waiting')
-            ->where('service_id', $counter->service_id)
+            ->whereIn('service_id', $serviceIds)
             ->where(function($query) use ($counterId) {
                 $query->whereNull('counter_id')->orWhere('counter_id', $counterId);
             })

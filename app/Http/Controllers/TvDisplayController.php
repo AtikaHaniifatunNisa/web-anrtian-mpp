@@ -200,11 +200,13 @@ class TvDisplayController extends Controller
         
         foreach ($zoneCounters as $counter) {
             // Get current queue for this counter
+            // Prioritas: serving > called
             $currentQueue = Queue::where('counter_id', $counter->id)
                 ->whereIn('status', ['serving', 'called'])
                 ->whereDate('created_at', $today)
                 ->with(['service'])
                 ->orderByRaw("CASE WHEN status = 'serving' THEN 1 WHEN status = 'called' THEN 2 END")
+                ->latest('called_at')
                 ->first();
             
             $queueData = [
